@@ -1,6 +1,6 @@
 {
   "name": "@tty-pt/mk",
-  "version": "0.0.3",
+  "version": "0.0.13",
   "description": "Makefile helpers to use npm C publishing",
   "keywords": [
     "Makefile",
