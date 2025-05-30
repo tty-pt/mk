@@ -1,3 +1,4 @@
+npm-root != npm root
 npm-prefix := ${npm-lib:%=${npm-root}/%} \
 	${npm-lib:%=${npm-root-dir}/../../%}
 prefix := ${pwd} /usr/local
