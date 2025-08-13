@@ -39,7 +39,7 @@ lib bin $(dirs):
 	@mkdir $@ 2>/dev/null || true
 
 clean:
-	rm lib/*.so bin/* src/*.o || true
+	@rm lib/*.so bin/* src/*.o 2>/dev/null || true
 
 installed-lib := $(DESTDIR)$(PREFIX)/lib/lib$(LIB).so
 installed-pc := $(DESTDIR)$(PREFIX)/lib/pkgconfig/$(LIB).pc
