@@ -3,10 +3,10 @@ RELDIR := .
 pwd != pwd
 npm-root != npm root
 npm-root-dir != dirname ${npm-root}
-prefix := ${pwd} \
+prefix := /usr/local \
+	  ${pwd} \
 	  ${npm-lib:%=${npm-root}/%} \
-	  ${npm-lib:%=${npm-root-dir}/../../%} \
-	  /usr/local
+	  ${npm-lib:%=${npm-root-dir}/../../%}
 WARN := -Wall -Wextra -Wpedantic
 LDLIBS += -l${LIB}
 CFLAGS += ${prefix:%=-I%/include} ${WARN}
@@ -22,8 +22,8 @@ libtarget := ${LIB:%=lib/lib%.so}
 all: ${libtarget} ${bintarget}
 
 ${bintarget}: ${libtarget} bin ${bintarget:bin/%=src/%.c}
-	@echo CC -o $@ ${@:bin/%=src/%.c} CFLAGS ${libtarget} LDFLAGS
-	@${CC} -o $@ ${@:bin/%=src/%.c} ${CFLAGS} ${libtarget} ${LDFLAGS}
+	@echo CC -o $@ ${@:bin/%=src/%.c} CFLAGS LDFLAGS
+	@${CC} -o $@ ${@:bin/%=src/%.c} ${CFLAGS} ${LDFLAGS}
 
 ${libtarget}: src/lib${LIB}.c include/${LIB}.h ${HEADERS:%=include/%} lib
 	@echo CC -o $@ src/lib${LIB}.c CFLAGS -fPIC \
