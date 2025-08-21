@@ -3,15 +3,15 @@ RELDIR := .
 pwd != pwd
 npm-root != npm root
 npm-root-dir != dirname ${npm-root}
-prefix := /usr/local \
-	  ${pwd} \
+prefix := ${pwd} \
+	  /usr/local \
 	  ${npm-lib:%=${npm-root}/%} \
 	  ${npm-lib:%=${npm-root-dir}/../../%}
 WARN := -Wall -Wextra -Wpedantic
-LDLIBS += -l${LIB}
+LDLIBS += -l${LIB} ${LIB-LDLIBS}
 CFLAGS += ${prefix:%=-I%/include} ${WARN}
-LIB-LDFLAGS += ${prefix:%=-L%/lib} ${LIB-LDLIBS}
-LDFLAGS	+= ${LIB-LDFLAGS} ${prefix:%=-Wl,-rpath,%/lib} ${LDLIBS}
+LIB-LDFLAGS += ${prefix:%=-L%/lib}
+LDFLAGS	+= ${LIB-LDFLAGS} ${prefix:%=-Wl,-rpath,%/lib}
 HEADERS += ${LIB}.h
 
 bintarget := ${BIN:%=bin/%} ${INSTALL-BIN:%=bin/%}
@@ -22,14 +22,14 @@ libtarget := ${LIB:%=lib/lib%.so}
 all: ${libtarget} ${bintarget}
 
 ${bintarget}: ${libtarget} bin ${bintarget:bin/%=src/%.c}
-	@echo CC -o $@ ${@:bin/%=src/%.c} CFLAGS LDFLAGS
-	@${CC} -o $@ ${@:bin/%=src/%.c} ${CFLAGS} ${LDFLAGS}
+	@echo CC -o $@ ${@:bin/%=src/%.c} CFLAGS LDFLAGS ${LDLIBS}
+	@${CC} -o $@ ${@:bin/%=src/%.c} ${CFLAGS} ${LDFLAGS} ${LDLIBS}
 
 ${libtarget}: src/lib${LIB}.c include/${LIB}.h ${HEADERS:%=include/%} lib
 	@echo CC -o $@ src/lib${LIB}.c CFLAGS -fPIC \
-		-shared LIB-LDFLAGS
+		-shared LIB-LDFLAGS ${LIB-LDLIBS}
 	@${CC} -o $@ src/lib${LIB}.c ${CFLAGS} -fPIC \
-		-shared ${LIB-LDFLAGS}
+		-shared ${LIB-LDFLAGS} ${LIB-LDLIBS}
 
 .c.o:
 	echo CC -c -o ${@:%=${RELDIR}/%} CFLAGS ${<:%=${RELDIR}/%}
