@@ -8,14 +8,16 @@ prefix := ${pwd} \
 	  ${npm-lib:%=${npm-root}/%} \
 	  ${npm-lib:%=${npm-root-dir}/../../%}
 WARN := -Wall -Wextra -Wpedantic
-LDLIBS += -l${LIB} ${LIB-LDLIBS}
+LDLIBS += ${LIB:%=-l%} ${LIB-LDLIBS}
 CFLAGS += ${prefix:%=-I%/include} ${WARN}
 LIB-LDFLAGS += ${prefix:%=-L%/lib}
 LDFLAGS	+= ${LIB-LDFLAGS} ${prefix:%=-Wl,-rpath,%/lib}
-HEADERS += ${LIB}.h
+HEADERS += ${ONELIB:%=%.h}
 
 bintarget := ${BIN:%=bin/%} ${INSTALL-BIN:%=bin/%}
 libtarget := ${LIB:%=lib/lib%.so}
+
+ONELIB != echo ${LIB} | awk '{print $$1}'
 
 .SUFFIXES: .so .c .o
 
@@ -25,10 +27,10 @@ ${bintarget}: ${libtarget} bin ${bintarget:bin/%=src/%.c}
 	@echo CC -o $@ ${@:bin/%=src/%.c} CFLAGS LDFLAGS ${LDLIBS}
 	@${CC} -o $@ ${@:bin/%=src/%.c} ${CFLAGS} ${LDFLAGS} ${LDLIBS}
 
-${libtarget}: src/lib${LIB}.c include/${LIB}.h ${HEADERS:%=include/%} lib
-	@echo CC -o $@ src/lib${LIB}.c CFLAGS -fPIC \
-		-shared LIB-LDFLAGS ${LIB-LDLIBS}
-	@${CC} -o $@ src/lib${LIB}.c ${CFLAGS} -fPIC \
+${libtarget}: ${LIB:%=src/lib%.c} ${HEADERS:%=include/%} lib
+	@echo CC -o $@ ${@:lib/%.so=src/%.c} CFLAGS \
+		-fPIC -shared LIB-LDFLAGS ${LIB-LDLIBS}
+	@${CC} -o $@ ${@:lib/%.so=src/%.c} ${CFLAGS} -fPIC \
 		-shared ${LIB-LDFLAGS} ${LIB-LDLIBS}
 
 .c.o:
@@ -41,14 +43,17 @@ lib bin $(dirs):
 clean:
 	@rm lib/*.so bin/* src/*.o 2>/dev/null || true
 
-installed-lib := $(DESTDIR)$(PREFIX)/lib/lib$(LIB).so
-installed-pc := $(DESTDIR)$(PREFIX)/lib/pkgconfig/$(LIB).pc
+installed-lib := $(LIB:%=${DESTDIR}${PREFIX}/lib/lib%.so)
+installed-pc := ${ONELIB:%=${DESTDIR}${PREFIX}/lib/pkgconfig/%.pc}
 
 $(installed-lib): ${libtarget}
-	install -m 644 ${libtarget} ${DESTDIR}${PREFIX}/lib
+	install -m 644 ${@:${DESTDIR}${PREFIX}/%=%} \
+		${DESTDIR}${PREFIX}/lib
 
-$(installed-pc): ${LIB}.pc
-	install -m 644 ${LIB}.pc $(DESTDIR)${PREFIX}/lib/pkgconfig
+$(installed-pc): ${ONELIB:%=%.pc}
+	install -m 644 \
+		${@:${DESTDIR}${PREFIX}/lib/pkgconfig/%=%} \
+		$(DESTDIR)${PREFIX}/lib/pkgconfig
 
 installed-headers := ${HEADERS:%=${DESTDIR}${PREFIX}/include/%}
 
@@ -59,7 +64,8 @@ $(installed-headers): ${HEADERS:%=include/%}
 installed-bin := $(INSTALL-BIN:%=$(DESTDIR)$(PREFIX)/bin/%)
 
 $(installed-bin): ${bintarget}
-	install -m 755 ${@:$(DESTDIR)$(PREFIX)/%=%} $(DESTDIR)${PREFIX}/bin
+	install -m 755 ${@:$(DESTDIR)$(PREFIX)/%=%} \
+		$(DESTDIR)${PREFIX}/bin
 
 install: $(installed-lib) $(installed-pc) $(installed-headers) $(installed-bin)
 
