@@ -12,6 +12,7 @@ prefix-Darwin += ${prefix-Darwin-${arch}}
 prefix-Linux := /usr
 prefix-OpenBSD := /usr/local
 prefix-Msys := /mingw64
+prefix-MingW := /ucrt64
 PREFIX ?= ${prefix-${uname}}
 DESTDIR     ?=
 prefix := ${DESTDIR}/${prefix-${uname}}
@@ -19,6 +20,7 @@ cc-Linux := ${CC}
 cc-Darwin := ${CC}
 cc-OpenBSD := ${CC}
 cc-Msys := /usr/bin/x86_64-w64-mingw32-gcc
+cc-MingW := /ucrt64/bin/gcc
 cc := ${cc-${uname}}
 prefix := ${pwd} ${prefix-${uname}} ${PREFIX}
 WARN := -Wall -Wextra -Wpedantic
@@ -29,11 +31,11 @@ LDLIBS-alpine := -lbsd
 LIB-LDLIBS += ${LDLIBS-${uname}} ${LDLIBS-${distro}}
 LDLIBS += ${LIB:%=-l%} ${LIB-LDLIBS}
 SO-Msys := dll
+SO-MingW := dll
 SO-Linux := so
 SO-OpenBSD := so
 SO-Darwin := so
 SO := ${SO-${uname}}
-CFLAGS-BIN-Msys += -static
 # CFLAGS-LIB-Msys += SO=exe
 INCFLAGS += ${prefix:%=-I%/include} ${WARN} ${CFLAGS-${uname}} ${CFLAGS}
 LIB-LDFLAGS += ${prefix:%=-L%/lib}
