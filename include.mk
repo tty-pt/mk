@@ -1,123 +1,142 @@
-# PREFIX ?= /usr/local
-RELDIR := .
-pwd := $(shell pwd)
-pwd != pwd
-uname := $(shell test "${cross}" = "" && uname || echo ${cross})
-uname != test "${cross}" = "" && uname || echo ${cross}
-arch := $(shell uname -m)
-arch != uname -m
-prefix-Darwin-arm64  := /opt/homebrew
-prefix-Darwin-x86_64 := /usr/local
-prefix-Darwin += ${prefix-Darwin-${arch}}
-prefix-Linux := /usr
-prefix-OpenBSD := /usr/local
-prefix-Msys := /mingw64
-prefix-MingW := /ucrt64
-PREFIX ?= ${prefix-${uname}}
-DESTDIR     ?=
-prefix := ${DESTDIR}/${prefix-${uname}}
-cc-Linux := ${CC}
-cc-Darwin := ${CC}
-cc-OpenBSD := ${CC}
-cc-Msys := /usr/bin/x86_64-w64-mingw32-gcc
-cc-MingW := /ucrt64/bin/gcc
-cc := ${cc-${uname}}
-prefix := ${pwd} ${prefix-${uname}} ${PREFIX}
+include ./../mk/portable.mk
+
 WARN := -Wall -Wextra -Wpedantic
-distro != cat /etc/os-release | grep ID \
-	| sed 's/.*=//' || true
-# LDLIBS-Msys := -lbsd
-LDLIBS-alpine := -lbsd
-LIB-LDLIBS += ${LDLIBS-${uname}} ${LDLIBS-${distro}}
-LDLIBS += ${LIB:%=-l%} ${LIB-LDLIBS}
-SO-Msys := dll
-SO-MingW := dll
-SO-Linux := so
-SO-OpenBSD := so
-SO-Darwin := so
-SO := ${SO-${uname}}
-# CFLAGS-LIB-Msys += SO=exe
-INCFLAGS += ${prefix:%=-I%/include} ${WARN} ${CFLAGS-${uname}} ${CFLAGS}
-LIB-LDFLAGS += ${prefix:%=-L%/lib}
-LDFLAGS	+= ${LIB-LDFLAGS} ${prefix:%=-Wl,-rpath,%/lib}
+CFLAGS += ${WARN}
+
+share-dir ?= ${bname}
+all ?= ${bname}
+
+LIB := $(shell echo ${all} | tr ' ' '\n' | sed -n '/^lib/p')
+LIB != echo ${all} | tr ' ' '\n' | sed -n '/^lib/p'
+BIN := $(shell echo ${all} | tr ' ' '\n' | sed '/^lib/d')
+BIN != echo ${all} | tr ' ' '\n' | sed '/^lib/d'
+
+INSTALL_BIN ?= ${BIN}
+
 ONELIB := $(shell echo ${LIB} | awk '{print $$1}')
 ONELIB != echo ${LIB} | awk '{print $$1}'
+ONELIB := ${ONELIB:lib%=%}
 
 FOLDER ?= ttypt
-
-HEADERS += ${ONELIB:%=${FOLDER}/%.h}
-
-bintarget := ${BIN:%=bin/%} ${INSTALL-BIN:%=bin/%}
-libtarget := ${LIB:%=lib/lib%.${SO}}
+HEADERS := $(shell ls include/${FOLDER} 2>/dev/null || true)
+HEADERS != ls include/${FOLDER} 2>/dev/null || true
+HEADERS := ${HEADERS:%=${FOLDER}/%}
 
 .SUFFIXES: .${SO} .c .o
 
-all: info ${libtarget} ${bintarget}
-	@echo ${installed-headers}
+all := objects-set.mk ${LIB:%=lib/%.${SO}} ${BIN:%=bin/%${EXE}}
+
+all: ${all}
+
+LIB-obj-y ?= ${LIB:%=src/%.o} ${${LIB:%=lib%-obj-y}}
+BIN-obj-y ?= ${BIN:%=src/%.o} ${${BIN:%=%-obj-y}}
+obj-y ?= ${LIB-obj-y} ${BIN-obj-y}
+
+CFLAGS-LIB := -fPIC
+
+objects-set.mk:
+	@for obj in ${LIB-obj-y}; do \
+		robj=`echo $$obj | sed 's|.*/||' \
+			| tr '.' '-'` ; \
+		echo CFLAGS-$$robj := ${CFLAGS-LIB} ; \
+	done > $@
+	@for obj in ${BIN-obj-y}; do \
+		robj=`echo $$obj | sed 's|.*/||' \
+			| tr '.' '-'` ; \
+		echo CFLAGS-$$robj := ${CFLAGS-BIN} ; \
+	done >> $@
+
+include objects-set.mk
 
 info:
-	@echo ARCH ${arch}
+	@echo BIN ${BIN}
+	@echo LIB ${LIB}
+	@echo HEADERS ${HEADERS}
 
-${bintarget}: ${libtarget} bin ${bintarget:bin/%=src/%.c}
-	${cc} -o $@ ${@:bin/%=src/%.c} \
-		${CFLAGS-BIN-${uname}} \
-		${INCFLAGS} ${LDFLAGS} ${LDLIBS}
+bintarget := ${BIN:%=bin/%${EXE}}
+$(bintarget): \
+	${LIB:%=lib/%.${SO}} bin ${BIN:%=src/%.o} ${${BIN:%=%-obj-y}}
+	${cc} -o $@ ${@:bin/%${EXE}=src/%.o} ${${@:bin/%${EXE}=%}-obj-y} ${LDFLAGS} ${LDFLAGS-${@:bin/%${EXE}=%}} ${LDFLAGS-${@:bin/%${EXE}=%}-${SYS}} ${LDFLAGS-${@:bin/%${EXE}=%}-${uname}} ${LDLIBS} ${LDLIBS-${@:bin/%${EXE}=%}} ${LDLIBS-${@:bin/%${EXE}=%}-${SYS}} ${LDLIBS-${@:bin/%${EXE}=%}-${uname}}
 
-${libtarget}: ${LIB:%=src/lib%.c} ${HEADERS:%=include/%} lib
-	${cc} -o $@ ${@:lib/%.${SO}=src/%.c} ${INCFLAGS} \
-		${CFLAGS-LIB-${uname}} -fPIC \
-		-shared ${LIB-LDFLAGS} ${LIB-LDLIBS}
+libtarget := ${LIB:%=lib/%.${SO}}
+$(libtarget): lib ${LIB:%=src/%.o} ${${LIB:%=%-obj-y}}
+	${cc} -o $@ ${@:lib/%.${SO}=src/%.o} ${${@:lib/%.${SO}=%}-obj-y} -shared ${LDFLAGS} ${LDFLAGS-${@:lib/%.${SO}=%}} ${LDFLAGS-${@:lib/%.${SO}=%}-${SYS}} ${LDFLAGS-${@:lib/%.${SO}=%}-${uname}} ${LDLIBS} ${LDLIBS-${@:lib/%.${SO}=%}} ${LDLIBS-${@:lib/%.${SO}=%}-${SYS}} ${LDLIBS-${@:lib/%.${SO}=%}-${uname}}
 
 .c.o:
-	${cc} -c -o ${@:%=${RELDIR}/%} ${INCFLAGS} ${<:%=${RELDIR}/%}
+	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} ${@:src/%.o=src/%.c}
 
-lib bin $(dirs):
+dirs += bin lib
+$(dirs):
 	@mkdir $@ 2>/dev/null || true
 
 clean:
-	@rm lib/*.${SO} bin/* src/*.o 2>/dev/null || true
+	@rm -rf src/*.o ${LIB:%=lib/%.${SO}} \
+		${BIN:%=bin/%${EXE}} man 2>/dev/null || true
 
-installed-lib-Msys := $(LIB:%=${DESTDIR}${PREFIX}/bin/lib%.${SO})
-installed-lib := $(LIB:%=${DESTDIR}${PREFIX}/lib/lib%.${SO})
+install-share-dirs := ${share-dirs:%=share/${share-dir}/%}
+install-share-dirs := ${install-share-dirs:%=${DESTDIR}${PREFIX}/%} ${DESTDIR}${PREFIX}/share/${share-dir}
 
-installed-pc := ${ONELIB:%=${DESTDIR}${PREFIX}/lib/pkgconfig/%.pc}
-
-$(installed-lib): ${libtarget} ${DESTDIR}${PREFIX}/lib
-	install -m 644 ${@:${DESTDIR}${PREFIX}/%=%} \
-		${DESTDIR}${PREFIX}/lib/
-
-$(installed-lib-Msys): ${libtarget} ${DESTDIR}${PREFIX}/bin
-	install -m 644 ${@:${DESTDIR}${PREFIX}/bin/%=lib/%} \
-		${DESTDIR}${PREFIX}/bin/
-
-install-dirs := ${DESTDIR}${PREFIX}/lib ${DESTDIR}${PREFIX}/bin \
-	${DESTDIR}${PREFIX}/include \
-	${DESTDIR}${PREFIX}/include/${FOLDER} \
-	${DESTDIR}${PREFIX}/lib/pkgconfig
-
-$(install-dirs):
+install-dirs += lib bin include include/${FOLDER} lib/pkgconfig
+install-dirs += share/man/man1 share/man/man3
+install-dirs := ${install-dirs:%=${DESTDIR}${PREFIX}/%}
+$(install-dirs) $(install-share-dirs):
 	install -d $@
 
 $(installed-pc): ${ONELIB:%=%.pc} ${DESTDIR}${PREFIX}/lib/pkgconfig
-	install -m 644 \
-		${@:${DESTDIR}${PREFIX}/lib/pkgconfig/%=%} \
-		$(DESTDIR)${PREFIX}/lib/pkgconfig
+	install -m 644 ${@:${DESTDIR}${PREFIX}/lib/pkgconfig/%=%} $@
 
-installed-headers := ${HEADERS:%=${DESTDIR}${PREFIX}/include/%}
+installed-headers := ${HEADERS:%=include/%}
+installed-headers := ${installed-headers:%=${DESTDIR}${PREFIX}/%}
+$(installed-headers): ${DESTDIR}${PREFIX}/include ${HEADERS:%=include/%}
+	install -m 644 ${@:${DESTDIR}${PREFIX}/%=%} $@
 
-$(installed-headers): ${HEADERS:%=include/%} ${DESTDIR}${PREFIX}/include/${FOLDER}
-	install -m 644 ${@:${DESTDIR}${PREFIX}/%=%} \
-		$(DESTDIR)${PREFIX}/include/${FOLDER}
+installed-libs := ${LIB:%=lib/%.${SO}}
+installed-libs := ${installed-libs:%=${DESTDIR}${PREFIX}/%}
+$(installed-libs): ${DESTDIR}${PREFIX}/lib ${LIB:%=lib/%.${SO}}
+	install -m 644 ${@:${DESTDIR}${PREFIX}/%=%} $@
 
-installed-bin := $(INSTALL-BIN:%=$(DESTDIR)$(PREFIX)/bin/%)
+installed-share := ${share:%=${DESTDIR}${PREFIX}/share/${share-dir}/%}
+$(installed-share): ${install-share-dirs} ${share}
+	install -m 644 ${@:${DESTDIR}${PREFIX}/share/${share-dir}/%=%} $@
 
-$(installed-bin): ${bintarget} ${DESTDIR}${PREFIX}/bin
-	install -m 755 ${@:$(DESTDIR)$(PREFIX)/%=%} \
-		$(DESTDIR)${PREFIX}/bin
+installed-lib-Windows := $(LIB:%=${DESTDIR}${PREFIX}/bin/%.${SO})
+$(installed-lib-Windows): ${LIB:%=lib/%.${SO}} ${DESTDIR}${PREFIX}/bin
+	install -m 644 ${@:${DESTDIR}${PREFIX}/bin/%=lib/%} $@
 
-install: ${installed-bin} ${installed-lib-${uname}} $(installed-lib) $(installed-pc) $(installed-headers)
+installed-bin := $(INSTALL_BIN:%=$(DESTDIR)$(PREFIX)/bin/%${EXE})
+$(installed-bin): ${INSTALL_BIN:%=bin/%${EXE}} ${DESTDIR}${PREFIX}/bin
+	install -m 755 ${@:$(DESTDIR)$(PREFIX)/%=%} $@
+
+install-info:
+	@echo ${installed-bin}
+
+
+MAN3 := $(shell test -f Doxyfile && ls man/*.3 2>/dev/null || true)
+MAN3 != test -f Doxyfile && ls man/*.3 2>/dev/null || true
+MAN1 := $(shell test -f Doxyfile && ls man/*.1 2>/dev/null || true)
+MAN1 != test -f Doxyfile && ls man/*.1 2>/dev/null || true
+
+docs: docs-bin
+	@test -f Doxyfile && doxygen Doxyfile || true
+
+docs-bin:
+	@test -f Doxyfile-bin && doxygen Doxyfile-bin || true
+
+installed-man3 := ${MAN3:man/%=${DESTDIR}${PREFIX}/share/man/man3/%}
+$(installed-man3): ${MAN3} ${DESTDIR}${PREFIX}/share/man/man3
+	install -m 644 ${@:${DESTDIR}${PREFIX}/share/man/man3/%=man/%} $@
+
+installed-man1 := ${MAN1:man/%=${DESTDIR}${PREFIX}/share/man/man1/%}
+$(installed-man1): ${MAN1} ${DESTDIR}${PREFIX}/share/man/man1
+	install -m 644 ${@:${DESTDIR}${PREFIX}/share/man/man1/%=man/%} $@
+
+compress-man:
+	@find ${DESTDIR}${PREFIX}/share/man -type f -name '*.[0-9]' -exec gzip -f {} \; 2>/dev/null || true
+
+install: ${install-dirs} ${installed-headers} ${installed-libs} ${installed-share} ${installed-bin} ${installed-lib-${SYS}} ${installed-man3} ${installed-man1}
+	@$(MAKE) compress-man
 
 uninstall:
-	rm -rf ${installed-lib} ${installed-pc} ${installed-headers} ${installed-bin}
+	rm -rf ${installed-headers} ${installed-libs} ${installed-share} ${installed-bin} ${installed-lib-${SYS}} ${install-share-dirs} ${installed-man3} ${installed-man1}
 
-.PHONY: all clean install uninstall
+.PHONY: all docs docs-bin compress-man clean install uninstall
