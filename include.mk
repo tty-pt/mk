@@ -1,4 +1,7 @@
-include ./../mk/portable.mk
+MPATH := $(dir $(lastword $(MAKEFILE_LIST)))
+MPATH != echo ${MAKEFILE_LIST} | tr ' ' '\n' | tail -n 1
+MPATH != dirname ${MPATH}
+include ${MPATH}/portable.mk
 
 WARN := -Wall -Wextra -Wpedantic
 CFLAGS += ${WARN}
@@ -45,9 +48,10 @@ objects-set.mk:
 		echo CFLAGS-$$robj := ${CFLAGS-BIN} ; \
 	done >> $@
 
-include objects-set.mk
+-include objects-set.mk
 
 info:
+	@echo MPATH ${MPATH}
 	@echo BIN ${BIN}
 	@echo LIB ${LIB}
 	@echo LIB-obj-y ${LIB-obj-y}
