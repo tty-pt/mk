@@ -28,9 +28,8 @@ all := objects-set.mk ${LIB:%=lib/%.${SO}} ${BIN:%=bin/%${EXE}}
 
 all: ${all}
 
-LIB-obj-y ?= ${LIB:%=src/%.o} ${${LIB:%=lib%-obj-y}}
-BIN-obj-y ?= ${BIN:%=src/%.o} ${${BIN:%=%-obj-y}}
-obj-y ?= ${LIB-obj-y} ${BIN-obj-y}
+LIB-obj-y ?= ${LIB:%=src/%.o} ${${LIB:%=%-obj-y}} ${${LIB:%=%-obj-y-${uname}}}
+BIN-obj-y ?= ${BIN:%=src/%.o} ${${BIN:%=%-obj-y}} ${${BIN:%=lib%-obj-y-${uname}}}
 
 CFLAGS-LIB := -fPIC
 
@@ -51,16 +50,17 @@ include objects-set.mk
 info:
 	@echo BIN ${BIN}
 	@echo LIB ${LIB}
+	@echo LIB-obj-y ${LIB-obj-y}
+	@echo BIN-obj-y ${BIN-obj-y}
 	@echo HEADERS ${HEADERS}
 
 bintarget := ${BIN:%=bin/%${EXE}}
-$(bintarget): \
-	${LIB:%=lib/%.${SO}} bin ${BIN:%=src/%.o} ${${BIN:%=%-obj-y}}
+$(bintarget): ${LIB:%=lib/%.${SO}} bin ${BIN-obj-y}
 	${cc} -o $@ ${@:bin/%${EXE}=src/%.o} ${${@:bin/%${EXE}=%}-obj-y} ${LDFLAGS} ${LDFLAGS-${@:bin/%${EXE}=%}} ${LDFLAGS-${@:bin/%${EXE}=%}-${SYS}} ${LDFLAGS-${@:bin/%${EXE}=%}-${uname}} ${LDLIBS} ${LDLIBS-${@:bin/%${EXE}=%}} ${LDLIBS-${@:bin/%${EXE}=%}-${SYS}} ${LDLIBS-${@:bin/%${EXE}=%}-${uname}}
 
 libtarget := ${LIB:%=lib/%.${SO}}
-$(libtarget): lib ${LIB:%=src/%.o} ${${LIB:%=%-obj-y}}
-	${cc} -o $@ ${@:lib/%.${SO}=src/%.o} ${${@:lib/%.${SO}=%}-obj-y} -shared ${LDFLAGS} ${LDFLAGS-${@:lib/%.${SO}=%}} ${LDFLAGS-${@:lib/%.${SO}=%}-${SYS}} ${LDFLAGS-${@:lib/%.${SO}=%}-${uname}} ${LDLIBS} ${LDLIBS-${@:lib/%.${SO}=%}} ${LDLIBS-${@:lib/%.${SO}=%}-${SYS}} ${LDLIBS-${@:lib/%.${SO}=%}-${uname}}
+$(libtarget): lib ${LIB:%=src/%.o} ${LIB-obj-y}
+	${cc} -o $@ ${@:lib/%.${SO}=src/%.o} ${${@:lib/%.${SO}=%}-obj-y} ${${@:lib/%.${SO}=%}-obj-y-${uname}} -shared ${LDFLAGS} ${LDFLAGS-${@:lib/%.${SO}=%}} ${LDFLAGS-${@:lib/%.${SO}=%}-${SYS}} ${LDFLAGS-${@:lib/%.${SO}=%}-${uname}} ${LDLIBS} ${LDLIBS-${@:lib/%.${SO}=%}} ${LDLIBS-${@:lib/%.${SO}=%}-${SYS}} ${LDLIBS-${@:lib/%.${SO}=%}-${uname}}
 
 .c.o:
 	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} ${@:src/%.o=src/%.c}
@@ -120,7 +120,7 @@ docs: docs-bin
 	@test -f Doxyfile && doxygen Doxyfile || true
 
 docs-bin:
-	@test -f Doxyfile-bin && doxygen Doxyfile-bin || true
+	@test -f Doxyfile && doxygen ../mk/Doxyfile-bin || true
 
 installed-man3 := ${MAN3:man/%=${DESTDIR}${PREFIX}/share/man/man3/%}
 $(installed-man3): ${MAN3} ${DESTDIR}${PREFIX}/share/man/man3

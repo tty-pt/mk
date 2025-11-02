@@ -20,6 +20,7 @@ prefix-Linux := /usr
 prefix-OpenBSD := /usr/local
 prefix-Msys := /mingw64
 prefix-MingW := /ucrt64
+
 PREFIX ?= ${prefix-${uname}}
 prefix := ${pwd} ${prefix-${uname}} ${add-prefix-${uname}}
 
