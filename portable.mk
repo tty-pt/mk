@@ -38,6 +38,13 @@ cc-Msys := /usr/bin/x86_64-w64-mingw32-gcc
 cc-MingW := /ucrt64/bin/gcc
 cc := ${cc-${uname}}
 
+cxx-Linux := ${CXX}
+cxx-Darwin := ${CXX}
+cxx-OpenBSD := ${CXX}
+cxx-Msys := /usr/bin/x86_64-w64-mingw32-g++
+cxx-MingW := /ucrt64/bin/g++
+cxx := ${cxx-${uname}}
+
 SO-Windows := dll
 SO-Unix := so
 SO := ${SO-${SYS}}

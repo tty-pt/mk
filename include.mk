@@ -25,7 +25,7 @@ HEADERS := $(shell ls include/${FOLDER} 2>/dev/null || true)
 HEADERS != ls include/${FOLDER} 2>/dev/null || true
 HEADERS := ${HEADERS:%=${FOLDER}/%}
 
-.SUFFIXES: .${SO} .c .o
+.SUFFIXES: .${SO} .c .o .cpp
 
 all := objects-set.mk ${LIB:%=lib/%.${SO}} ${BIN:%=bin/%${EXE}}
 
@@ -68,6 +68,9 @@ $(libtarget): lib ${LIB:%=src/%.o} ${LIB-obj-y}
 
 .c.o:
 	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} ${@:src/%.o=src/%.c}
+
+.cpp.o:
+	${cxx} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} ${@:src/%.o=src/%.cpp}
 
 dirs += bin lib
 $(dirs):
