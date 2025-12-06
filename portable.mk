@@ -55,10 +55,12 @@ EXE := ${EXE-${SYS}}
 CFLAGS += ${prefix:%=-I%/include} ${CFLAGS-${SYS}} \
 	${CFLAGS-${uname}} ${CFLAGS-${distro}}
 CFLAGS-BIN-Windows += -static
+CFLAGS-m-Darwin += -ObjC
 
 LDFLAGS += ${prefix:%=-L%/lib} ${LDFLAGS-${SYS}} \
 	${LDFLAGS-${uname}} ${LDFLAGS-${distro}}
 
+LDLIBS-Darwin += -lobjc
 LDLIBS += ${LDLIBS-${SYS}} \
 	  ${LDLIBS-${uname}} ${LDLIBS-${distro}}
 LDLIBS-alpine := -lbsd
