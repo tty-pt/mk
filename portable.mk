@@ -22,7 +22,7 @@ prefix-Msys := /mingw64
 prefix-MingW := /ucrt64
 
 PREFIX ?= ${prefix-${uname}}
-prefix := ${pwd} ${prefix-${uname}} ${add-prefix-${uname}}
+prefix := ${pwd} ${prefix-${uname}} ${add-prefix} ${add-prefix-${uname}} ${mod-prefix-${uname}:%=${prefix-${uname}}/%}
 
 SYS-Msys := Windows
 SYS-MingW := Windows
