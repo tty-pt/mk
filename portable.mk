@@ -20,12 +20,14 @@ prefix-Linux := /usr
 prefix-OpenBSD := /usr/local
 prefix-Msys := /mingw64
 prefix-MingW := /ucrt64
+prefix-MinGW64 := /mingw64
 
 PREFIX ?= ${prefix-${uname}}
 prefix := ${pwd} ${prefix-${uname}} ${add-prefix} ${add-prefix-${uname}} ${mod-prefix-${uname}:%=${prefix-${uname}}/%}
 
 SYS-Msys := Windows
 SYS-MingW := Windows
+SYS-MinGW64 := Windows
 SYS-Linux := Unix
 SYS-OpenBSD := Unix
 SYS-Darwin := Unix
@@ -36,6 +38,7 @@ cc-Darwin := ${CC}
 cc-OpenBSD := ${CC}
 cc-Msys := /usr/bin/x86_64-w64-mingw32-gcc
 cc-MingW := /ucrt64/bin/gcc
+cc-MinGW64 := /mingw64/bin/gcc
 cc := ${cc-${uname}}
 
 cxx-Linux := ${CXX}
@@ -43,6 +46,7 @@ cxx-Darwin := ${CXX}
 cxx-OpenBSD := ${CXX}
 cxx-Msys := /usr/bin/x86_64-w64-mingw32-g++
 cxx-MingW := /ucrt64/bin/g++
+cxx-MinGW64 := /mingw64/bin/g++
 cxx := ${cxx-${uname}}
 
 SO-Windows := dll
