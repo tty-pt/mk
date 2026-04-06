@@ -113,6 +113,10 @@ installed-lib-Windows := $(LIB:%=${DESTDIR}${PREFIX}/bin/%.${SO})
 $(installed-lib-Windows): ${LIB:%=lib/%.${SO}} ${DESTDIR}${PREFIX}/bin
 	install -m 644 ${@:${DESTDIR}${PREFIX}/bin/%=lib/%} $@
 
+installed-dep-dlls-Windows := ${install-dep-dlls-Windows:%=${DESTDIR}${PREFIX}/bin/%}
+$(installed-dep-dlls-Windows): ${DESTDIR}${PREFIX}/bin
+	install -m 644 ${PREFIX}/bin/${@:${DESTDIR}${PREFIX}/bin/%=%} $@
+
 installed-bin := $(INSTALL_BIN:%=$(DESTDIR)$(PREFIX)/bin/%${EXE})
 $(installed-bin): ${INSTALL_BIN:%=bin/%${EXE}} ${DESTDIR}${PREFIX}/bin
 	install -m 755 ${@:$(DESTDIR)$(PREFIX)/%=%} $@
@@ -147,10 +151,10 @@ installed-extra := ${install-extra:%=${DESTDIR}${PREFIX}/%}
 $(installed-extra): ${install-extra}
 	install -m 644 ${@:${DESTDIR}${PREFIX}/%=%} $@
 
-install: ${install-dirs} ${installed-headers} ${installed-libs} ${installed-share} ${installed-bin} ${installed-lib-${SYS}} ${installed-man3} ${installed-man1} ${installed-extra}
+install: ${install-dirs} ${installed-headers} ${installed-libs} ${installed-share} ${installed-bin} ${installed-lib-${SYS}} ${installed-dep-dlls-${SYS}} ${installed-man3} ${installed-man1} ${installed-extra}
 	@$(MAKE) compress-man
 
 uninstall:
-	rm -rf ${installed-headers} ${installed-libs} ${installed-share} ${installed-bin} ${installed-lib-${SYS}} ${install-share-dirs} ${installed-man3} ${installed-man1}
+	rm -rf ${installed-headers} ${installed-libs} ${installed-share} ${installed-bin} ${installed-lib-${SYS}} ${installed-dep-dlls-${SYS}} ${install-share-dirs} ${installed-man3} ${installed-man1}
 
 .PHONY: all docs docs-bin compress-man clean install uninstall
