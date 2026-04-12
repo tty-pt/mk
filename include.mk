@@ -65,6 +65,7 @@ $(bintarget): ${LIB:%=lib/%.${SO}} bin ${BIN-obj-y}
 libtarget := ${LIB:%=lib/%.${SO}}
 $(libtarget): lib ${LIB:%=src/%.o} ${LIB-obj-y}
 	${cc} -o $@ ${@:lib/%.${SO}=src/%.o} ${${@:lib/%.${SO}=%}-obj-y} ${${@:lib/%.${SO}=%}-obj-y-${uname}} -shared ${LDFLAGS} ${LDFLAGS-${@:lib/%.${SO}=%}-${SYS}} ${LDFLAGS-${@:lib/%.${SO}=%}-${uname}} ${LDFLAGS-${@:lib/%.${SO}=%}} ${LDLIBS-${@:lib/%.${SO}=%}} ${LDLIBS-${@:lib/%.${SO}=%}-${SYS}} ${LDLIBS-${@:lib/%.${SO}=%}-${uname}} ${LDLIBS}
+	@test -z "${SONAME-${@:lib/%.${SO}=%}}" || ln -sf ${@:lib/%=%} lib/${SONAME-${@:lib/%.${SO}=%}}.${SO}
 
 .c.o:
 	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} ${@:src/%.o=src/%.c}
@@ -80,7 +81,7 @@ $(dirs):
 	@mkdir $@ 2>/dev/null || true
 
 clean:
-	@rm -rf src/*.o ${LIB:%=lib/%.${SO}} \
+	@rm -rf src/*.o ${LIB:%=lib/%.${SO}} ${LIB:%=lib/${SONAME-%}.${SO}} \
 		${BIN:%=bin/%${EXE}} man 2>/dev/null || true
 
 install-share-dirs := ${share-dirs:%=share/${share-dir}/%}
@@ -104,6 +105,7 @@ installed-libs := ${LIB:%=lib/%.${SO}}
 installed-libs := ${installed-libs:%=${DESTDIR}${PREFIX}/%}
 $(installed-libs): ${DESTDIR}${PREFIX}/lib ${LIB:%=lib/%.${SO}}
 	install -m 644 ${@:${DESTDIR}${PREFIX}/%=%} $@
+	test -z "${SONAME-${@:${DESTDIR}${PREFIX}/lib/%.${SO}=%}}" || ln -sf ${@:${DESTDIR}${PREFIX}/lib/%=%} ${DESTDIR}${PREFIX}/lib/${SONAME-${@:${DESTDIR}${PREFIX}/lib/%.${SO}=%}}.${SO}
 
 installed-share := ${share:%=${DESTDIR}${PREFIX}/share/${share-dir}/%}
 $(installed-share): ${install-share-dirs} ${share}
