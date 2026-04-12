@@ -107,6 +107,7 @@ $(installed-libs): ${DESTDIR}${PREFIX}/lib ${LIB:%=lib/%.${SO}}
 
 installed-share := ${share:%=${DESTDIR}${PREFIX}/share/${share-dir}/%}
 $(installed-share): ${install-share-dirs} ${share}
+	mkdir -p ${@D}
 	install -m 644 ${@:${DESTDIR}${PREFIX}/share/${share-dir}/%=%} $@
 
 installed-lib-Windows := $(LIB:%=${DESTDIR}${PREFIX}/bin/%.${SO})
