@@ -9,10 +9,12 @@ CFLAGS += ${WARN}
 share-dir ?= ${bname}
 all ?= ${bname}
 
+WASM := $(shell echo ${all} | tr ' ' '\n' | sed -n '/\.wasm/p')
+WASM != echo ${all} | tr ' ' '\n' | sed -n '/\.wasm/p'
 LIB := $(shell echo ${all} | tr ' ' '\n' | sed -n '/^lib/p')
 LIB != echo ${all} | tr ' ' '\n' | sed -n '/^lib/p'
-BIN := $(shell echo ${all} | tr ' ' '\n' | sed '/^lib/d')
-BIN != echo ${all} | tr ' ' '\n' | sed '/^lib/d'
+BIN := $(shell echo ${all} | tr ' ' '\n' | sed '/^lib/d' | sed '/\.wasm/d')
+BIN != echo ${all} | tr ' ' '\n' | sed '/^lib/d' | sed '/\.wasm/d'
 
 INSTALL_BIN ?= ${BIN}
 
@@ -27,7 +29,8 @@ HEADERS := ${HEADERS:%=${FOLDER}/%}
 
 .SUFFIXES: .${SO} .m .c .o .cpp
 
-all := objects-set.mk ${LIB:%=lib/%.${SO}} ${BIN:%=bin/%${EXE}}
+WASM_PATH ?= .
+all := objects-set.mk ${LIB:%=lib/%.${SO}} ${BIN:%=bin/%${EXE}} ${WASM:%=${WASM_PATH}/%}
 
 all: ${all}
 
@@ -160,4 +163,19 @@ install: ${install-dirs} ${installed-headers} ${installed-libs} ${installed-shar
 uninstall:
 	rm -rf ${installed-headers} ${installed-libs} ${installed-share} ${installed-bin} ${installed-lib-${SYS}} ${installed-dep-dlls-${SYS}} ${install-share-dirs} ${installed-man3} ${installed-man1}
 
-.PHONY: all docs docs-bin compress-man clean install uninstall
+${WASM_PATH}/%.wasm:
+	@if echo 'int main(void){}' | ${WASI_CC} ${WASM_CFLAGS} -x c - -c -o /dev/null >/dev/null 2>&1; then \
+		${WASI_CC} \
+			$($*-cflags) ${WASM_CFLAGS} ${WASM_LDFLAGS} -o $@ $($*-src); \
+	else \
+		echo "Skipping WASM build of $@ — see README.md (WASM Setup)"; \
+	fi
+
+wasm: ${WASM:%=${WASM_PATH}/%}
+
+clean-wasm:
+	rm -f ${WASM:%=${WASM_PATH}/%}
+
+clean: clean-wasm
+
+.PHONY: all docs docs-bin compress-man clean install uninstall wasm clean-wasm

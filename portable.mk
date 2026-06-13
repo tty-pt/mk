@@ -68,3 +68,8 @@ LDLIBS-Darwin += -lobjc
 LDLIBS += ${LDLIBS-${SYS}} \
 	  ${LDLIBS-${uname}} ${LDLIBS-${distro}}
 LDLIBS-alpine := -lbsd
+
+WASI_CC    ?= clang
+WASI_SYSROOT ?=
+WASM_CFLAGS   ?= -O2 -D__wasm__ --target=wasm32-wasi
+WASM_LDFLAGS  ?= -mexec-model=reactor -Wl,--export-all -Wl,--allow-undefined
