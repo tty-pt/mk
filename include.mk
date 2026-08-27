@@ -37,7 +37,7 @@ all: ${all}
 LIB-obj-y ?= ${LIB:%=src/%.o} ${${LIB:%=%-obj-y}} ${${LIB:%=%-obj-y-${uname}}}
 BIN-obj-y ?= ${BIN:%=src/%.o} ${${BIN:%=%-obj-y}} ${${BIN:%=lib%-obj-y-${uname}}}
 
-CFLAGS-LIB := -fPIC
+CFLAGS-LIB := -fPIC ${EXTRA_CFLAGS}
 
 objects-set.mk:
 	@for obj in ${LIB-obj-y}; do \
@@ -71,7 +71,10 @@ $(libtarget): lib ${LIB:%=src/%.o} ${LIB-obj-y}
 	@test -z "${SONAME-${@:lib/%.${SO}=%}}" || ln -sf ${@:lib/%=%} lib/${SONAME-${@:lib/%.${SO}=%}}.${SO}
 
 .c.o:
+	@rm -f $@.d; ${cc} ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} -MM -MT $@ $< > $@.d 2>/dev/null || true
 	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} ${@:src/%.o=src/%.c}
+
+-include $(LIB-obj-y:.o=.o.d) $(BIN-obj-y:.o=.o.d)
 
 .m.o:
 	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-m-${uname}} ${CFLAGS-${@:src/%.o=%-o}} ${@:src/%.o=src/%.m}
