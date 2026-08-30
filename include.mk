@@ -1,6 +1,4 @@
-MPATH := $(dir $(lastword $(MAKEFILE_LIST)))
-MPATH != echo ${MAKEFILE_LIST} | tr ' ' '\n' | tail -n 1
-MPATH != dirname ${MPATH}
+MPATH != [ -n "${.PARSEDIR}" ] && echo "${.PARSEDIR}" || dirname "$$(echo "${MAKEFILE_LIST}" | tr " " "\\n" | tail -n 1)"
 include ${MPATH}/portable.mk
 
 WARN := -Wall -Wextra -Wpedantic
@@ -9,21 +7,16 @@ CFLAGS += ${WARN}
 share-dir ?= ${bname}
 all ?= ${bname}
 
-WASM := $(shell echo ${all} | tr ' ' '\n' | sed -n '/\.wasm/p')
-WASM != echo ${all} | tr ' ' '\n' | sed -n '/\.wasm/p'
-LIB := $(shell echo ${all} | tr ' ' '\n' | sed -n '/^lib/p')
-LIB != echo ${all} | tr ' ' '\n' | sed -n '/^lib/p'
-BIN := $(shell echo ${all} | tr ' ' '\n' | sed '/^lib/d' | sed '/\.wasm/d')
-BIN != echo ${all} | tr ' ' '\n' | sed '/^lib/d' | sed '/\.wasm/d'
+WASM != echo "${all}" | tr ' ' '\n' | grep '\.wasm' || true
+LIB != echo "${all}" | tr ' ' '\n' | grep '^lib' || true
+BIN != echo "${all}" | tr ' ' '\n' | grep -v '^lib' | grep -v '\.wasm' || true
 
 INSTALL_BIN ?= ${BIN}
 
-ONELIB := $(shell echo ${LIB} | awk '{print $$1}')
-ONELIB != echo ${LIB} | awk '{print $$1}'
+ONELIB != echo "${LIB}" | awk '{print $$1}'
 ONELIB := ${ONELIB:lib%=%}
 
 FOLDER ?= ttypt
-HEADERS := $(shell ls include/${FOLDER} 2>/dev/null || true)
 HEADERS != ls include/${FOLDER} 2>/dev/null || true
 HEADERS := ${HEADERS:%=${FOLDER}/%}
 
@@ -34,22 +27,27 @@ all := objects-set.mk ${LIB:%=lib/%.${SO}} ${BIN:%=bin/%${EXE}} ${WASM:%=${WASM_
 
 all: ${all}
 
-LIB-obj-y ?= ${LIB:%=src/%.o} ${${LIB:%=%-obj-y}} ${${LIB:%=%-obj-y-${uname}}}
-BIN-obj-y ?= ${BIN:%=src/%.o} ${${BIN:%=%-obj-y}} ${${BIN:%=lib%-obj-y-${uname}}}
+LIB-obj-default != for l in ${LIB}; do printf 'src/%s.o ' "$$l"; done
+BIN-obj-default != for b in ${BIN}; do printf 'src/%s.o ' "$$b"; done
+
+LIB-obj-y ?= ${LIB-obj-default} ${${LIB:%=%-obj-y}} ${${LIB:%=%-obj-y-${uname}}}
+BIN-obj-y ?= ${BIN-obj-default} ${${BIN:%=%-obj-y}} ${${BIN:%=%-obj-y-${uname}}}
 
 CFLAGS-LIB := -fPIC ${EXTRA_CFLAGS}
 
 objects-set.mk:
-	@for obj in ${LIB-obj-y}; do \
-		robj=`echo $$obj | sed 's|.*/||' \
-			| tr '.' '-'` ; \
-		echo CFLAGS-$$robj := ${CFLAGS-LIB} ; \
-	done > $@
-	@for obj in ${BIN-obj-y}; do \
-		robj=`echo $$obj | sed 's|.*/||' \
-			| tr '.' '-'` ; \
-		echo CFLAGS-$$robj := ${CFLAGS-BIN} ; \
-	done >> $@
+	@rm -f $@
+	@for obj in ${LIB-obj-y} ""; do \
+		[ -z "$$obj" ] && continue; \
+		robj=`echo $$obj | sed 's|.*/||' | tr '.' '-'` ; \
+		echo CFLAGS-$$robj := ${CFLAGS-LIB} >> $@ ; \
+	done
+	@for obj in ${BIN-obj-y} ""; do \
+		[ -z "$$obj" ] && continue; \
+		robj=`echo $$obj | sed 's|.*/||' | tr '.' '-'` ; \
+		echo CFLAGS-$$robj := ${CFLAGS-BIN} >> $@ ; \
+	done
+	@touch $@
 
 -include objects-set.mk
 
@@ -72,15 +70,16 @@ $(libtarget): lib ${LIB:%=src/%.o} ${LIB-obj-y}
 
 .c.o:
 	@rm -f $@.d; ${cc} ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} -MM -MT $@ $< > $@.d 2>/dev/null || true
-	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} ${@:src/%.o=src/%.c}
+	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} $<
 
--include $(LIB-obj-y:.o=.o.d) $(BIN-obj-y:.o=.o.d)
+DEP_FILES != for f in ${LIB-obj-y} ${BIN-obj-y}; do [ -n "$$f" ] && [ -f "$${f%.o}.o.d" ] && printf '%s.o.d ' "$${f%.o}"; done; printf '/dev/null'
+-include ${DEP_FILES}
 
 .m.o:
-	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-m-${uname}} ${CFLAGS-${@:src/%.o=%-o}} ${@:src/%.o=src/%.m}
+	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-m-${uname}} ${CFLAGS-${@:src/%.o=%-o}} $<
 
 .cpp.o:
-	${cxx} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} ${@:src/%.o=src/%.cpp}
+	${cxx} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} $<
 
 dirs += bin lib
 $(dirs):
@@ -134,9 +133,7 @@ install-info:
 	@echo ${installed-bin}
 
 
-MAN3 := $(shell test -f Doxyfile && ls man/*.3 2>/dev/null || true)
 MAN3 != test -f Doxyfile && ls man/*.3 2>/dev/null || true
-MAN1 := $(shell test -f Doxyfile && ls man/*.1 2>/dev/null || true)
 MAN1 != test -f Doxyfile && ls man/*.1 2>/dev/null || true
 
 docs: docs-bin
