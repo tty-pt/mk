@@ -13,7 +13,7 @@ FILE_PATTERNS          = *.h
 GENERATE_MAN           = YES
 MAN_OUTPUT             = man
 MAN_SUBDIR             = .
-MAN_LINKS = YES
+MAN_LINKS = NO
 GENERATE_GROUP_MEMBER_PAGES = YES
 
 GENERATE_HTML = NO

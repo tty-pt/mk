@@ -1,4 +1,5 @@
-MPATH != [ -n "${.PARSEDIR}" ] && echo "${.PARSEDIR}" || dirname "$$(echo "${MAKEFILE_LIST}" | tr " " "\\n" | tail -n 1)"
+MPATH := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
+MPATH != if [ -n "${MPATH}" ]; then echo "${MPATH}"; elif [ -n "${.PARSEDIR}" ]; then echo "${.PARSEDIR}"; elif [ -n "${MAKEFILE_LIST:M*include.mk:H}" ]; then echo "${MAKEFILE_LIST:M*include.mk:H}"; else echo "../mk"; fi
 include ${MPATH}/portable.mk
 
 WARN := -Wall -Wextra -Wpedantic
@@ -7,16 +8,21 @@ CFLAGS += ${WARN}
 share-dir ?= ${bname}
 all ?= ${bname}
 
+WASM := $(shell echo "${all}" | tr ' ' '\n' | grep '\.wasm' || true)
 WASM != echo "${all}" | tr ' ' '\n' | grep '\.wasm' || true
+LIB := $(shell echo "${all}" | tr ' ' '\n' | grep '^lib' || true)
 LIB != echo "${all}" | tr ' ' '\n' | grep '^lib' || true
+BIN := $(shell echo "${all}" | tr ' ' '\n' | grep -v '^lib' | grep -v '\.wasm' || true)
 BIN != echo "${all}" | tr ' ' '\n' | grep -v '^lib' | grep -v '\.wasm' || true
 
 INSTALL_BIN ?= ${BIN}
 
+ONELIB := $(shell echo "${LIB}" | awk '{print $$1}')
 ONELIB != echo "${LIB}" | awk '{print $$1}'
 ONELIB := ${ONELIB:lib%=%}
 
 FOLDER ?= ttypt
+HEADERS := $(shell ls include/${FOLDER} 2>/dev/null || true)
 HEADERS != ls include/${FOLDER} 2>/dev/null || true
 HEADERS := ${HEADERS:%=${FOLDER}/%}
 
@@ -27,8 +33,10 @@ all := objects-set.mk ${LIB:%=lib/%.${SO}} ${BIN:%=bin/%${EXE}} ${WASM:%=${WASM_
 
 all: ${all}
 
-LIB-obj-default != for l in ${LIB}; do printf 'src/%s.o ' "$$l"; done
-BIN-obj-default != for b in ${BIN}; do printf 'src/%s.o ' "$$b"; done
+LIB-obj-default := $(shell for l in ${LIB}; do echo "src/$$l.o"; done)
+LIB-obj-default != for l in ${LIB}; do echo "src/$$l.o"; done
+BIN-obj-default := $(shell for b in ${BIN}; do echo "src/$$b.o"; done)
+BIN-obj-default != for b in ${BIN}; do echo "src/$$b.o"; done
 
 LIB-obj-y ?= ${LIB-obj-default} ${${LIB:%=%-obj-y}} ${${LIB:%=%-obj-y-${uname}}}
 BIN-obj-y ?= ${BIN-obj-default} ${${BIN:%=%-obj-y}} ${${BIN:%=%-obj-y-${uname}}}
@@ -72,7 +80,8 @@ $(libtarget): lib ${LIB:%=src/%.o} ${LIB-obj-y}
 	@rm -f $@.d; ${cc} ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} -MM -MT $@ $< > $@.d 2>/dev/null || true
 	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} $<
 
-DEP_FILES != for f in ${LIB-obj-y} ${BIN-obj-y}; do [ -n "$$f" ] && [ -f "$${f%.o}.o.d" ] && printf '%s.o.d ' "$${f%.o}"; done; printf '/dev/null'
+DEP_FILES := $(shell for f in ${LIB-obj-y} ${BIN-obj-y}; do [ -n "$$f" ] && [ -f "$${f%.o}.o.d" ] && echo "$${f%.o}.o.d"; done; echo '/dev/null')
+DEP_FILES != for f in ${LIB-obj-y} ${BIN-obj-y}; do [ -n "$$f" ] && [ -f "$${f%.o}.o.d" ] && echo "$${f%.o}.o.d"; done; echo '/dev/null'
 -include ${DEP_FILES}
 
 .m.o:
@@ -133,7 +142,9 @@ install-info:
 	@echo ${installed-bin}
 
 
+MAN3 := $(shell test -f Doxyfile && ls man/*.3 2>/dev/null || true)
 MAN3 != test -f Doxyfile && ls man/*.3 2>/dev/null || true
+MAN1 := $(shell test -f Doxyfile && ls man/*.1 2>/dev/null || true)
 MAN1 != test -f Doxyfile && ls man/*.1 2>/dev/null || true
 
 docs: docs-bin

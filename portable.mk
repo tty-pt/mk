@@ -1,8 +1,16 @@
+pwd := $(shell pwd)
 pwd != pwd
+
+bname := $(shell basename ${pwd})
 bname != basename ${pwd}
+
+uname := $(shell test "${cross}" = "" && uname || echo ${cross})
 uname != test "${cross}" = "" && uname || echo ${cross}
+
+arch := $(shell uname -m)
 arch != uname -m
 
+distro := $(shell sed -n 's/^ID=//p' /etc/os-release 2>/dev/null | tr -d '"')
 distro != sed -n 's/^ID=//p' /etc/os-release 2>/dev/null | tr -d '"' || true
 
 prefix-Darwin-arm64  := /opt/homebrew
@@ -65,7 +73,7 @@ EXE-Windows := .exe
 EXE := ${EXE-${SYS}}
 
 CFLAGS += ${prefix:%=-I%/include} ${CFLAGS-${SYS}} \
-	${CFLAGS-${uname}} ${CFLAGS-${distro}}
+	${CFLAGS-${uname}} ${CFLAGS-${distro}} ${CFLAGS-${arch}}
 CFLAGS-BIN-Windows += -static
 CFLAGS-m-Darwin += -ObjC
 
