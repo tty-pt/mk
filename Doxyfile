@@ -13,8 +13,14 @@ FILE_PATTERNS          = *.h
 GENERATE_MAN           = YES
 MAN_OUTPUT             = man
 MAN_SUBDIR             = .
+MAN_EXTENSION          = 3
 MAN_LINKS = NO
 GENERATE_GROUP_MEMBER_PAGES = YES
+
+# Man page titles strip the include/ prefix: "ttypt/xy.h", "hyle/schema.h".
+STRIP_FROM_PATH        = include/
+
+SEPARATE_MEMBER_PAGES  = NO
 
 GENERATE_HTML = NO
 GENERATE_LATEX = NO
