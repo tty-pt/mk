@@ -22,6 +22,10 @@ ONELIB != echo "${LIB}" | awk '{print $$1}'
 ONELIB := ${ONELIB:lib%=%}
 
 FOLDER ?= ttypt
+ifeq ($(FOLDER),nd)
+ND_INCLUDES := $(patsubst %,-I%,$(wildcard $(MPATH)/../nd-*/include $(MPATH)/../axil-nd/include))
+CFLAGS := $(ND_INCLUDES) $(CFLAGS)
+endif
 HEADERS := $(shell ls include/${FOLDER} 2>/dev/null || true)
 HEADERS != ls include/${FOLDER} 2>/dev/null || true
 HEADERS := ${HEADERS:%=${FOLDER}/%}
