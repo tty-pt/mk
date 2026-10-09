@@ -22,6 +22,10 @@ ONELIB != echo "${LIB}" | awk '{print $$1}'
 ONELIB := ${ONELIB:lib%=%}
 
 FOLDER ?= ttypt
+ifeq ($(FOLDER),nd)
+ND_INCLUDES := $(patsubst %,-I%,$(wildcard $(MPATH)/../nd-*/include $(MPATH)/../axil-nd/include))
+CFLAGS := $(ND_INCLUDES) $(CFLAGS)
+endif
 HEADERS := $(shell ls include/${FOLDER} 2>/dev/null || true)
 HEADERS != ls include/${FOLDER} 2>/dev/null || true
 HEADERS := ${HEADERS:%=${FOLDER}/%}
@@ -96,7 +100,7 @@ $(dirs):
 
 clean:
 	@rm -rf src/*.o ${LIB:%=lib/%.${SO}} ${LIB:%=lib/${SONAME-%}.${SO}} \
-		${BIN:%=bin/%${EXE}} man 2>/dev/null || true
+		${BIN:%=bin/%${EXE}} man art *.stamp 2>/dev/null || true
 
 install-share-dirs := ${share-dirs:%=share/${share-dir}/%}
 install-share-dirs := ${install-share-dirs:%=${DESTDIR}${PREFIX}/%} ${DESTDIR}${PREFIX}/share/${share-dir}
