@@ -81,7 +81,7 @@ $(libtarget): lib ${LIB:%=src/%.o} ${LIB-obj-y}
 	@test -z "${SONAME-${@:lib/%.${SO}=%}}" || ln -sf ${@:lib/%=%} lib/${SONAME-${@:lib/%.${SO}=%}}.${SO}
 
 .c.o:
-	@rm -f $@.d; ${cc} ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} -MM -MT $@ $< > $@.d 2>/dev/null || true
+	@rm -f $@.d; ${cc} ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} -MM -MP -MT $@ $< > $@.d 2>/dev/null || true
 	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} $<
 
 DEP_FILES := $(shell for f in ${LIB-obj-y} ${BIN-obj-y}; do [ -n "$$f" ] && [ -f "$${f%.o}.o.d" ] && echo "$${f%.o}.o.d"; done; echo '/dev/null')
@@ -99,7 +99,7 @@ $(dirs):
 	@mkdir $@ 2>/dev/null || true
 
 clean:
-	@rm -rf src/*.o ${LIB:%=lib/%.${SO}} ${LIB:%=lib/${SONAME-%}.${SO}} \
+	@rm -rf src/*.o src/*.o.d src/*.d ${LIB:%=lib/%.${SO}} ${LIB:%=lib/${SONAME-%}.${SO}} \
 		${BIN:%=bin/%${EXE}} man art *.stamp 2>/dev/null || true
 
 install-share-dirs := ${share-dirs:%=share/${share-dir}/%}
