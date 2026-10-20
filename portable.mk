@@ -27,7 +27,11 @@ prefix-MinGW64 := /mingw64
 prefix-${uname} ?= /usr/local
 
 PREFIX ?= ${prefix-${uname}}
-prefix := ${pwd} ${prefix-${uname}} ${add-prefix} ${add-prefix-${uname}} ${mod-prefix-${uname}:%=${prefix-${uname}}/%}
+add-prefix-glob ?=
+add-prefix-dirs := $(shell [ -n "${add-prefix-glob}" ] && for p in ${add-prefix-glob}; do [ -d "$$p" ] && echo "$$p"; done || true)
+add-prefix-dirs != [ -n "${add-prefix-glob}" ] && for p in ${add-prefix-glob}; do [ -d "$$p" ] && echo "$$p"; done || true
+
+prefix := ${pwd} ${add-prefix} ${add-prefix-dirs} ${prefix-${uname}} ${add-prefix-${uname}} ${mod-prefix-${uname}:%=${prefix-${uname}}/%}
 
 SYS-Msys := Windows
 SYS-MingW := Windows

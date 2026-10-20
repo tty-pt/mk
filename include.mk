@@ -94,9 +94,14 @@ dirs += bin lib
 $(dirs):
 	@mkdir $@ 2>/dev/null || true
 
-clean:
+CLEAN_EXTRA ?=
+
+clean: clean-extra
 	@rm -rf src/*.o src/*.o.d src/*.d ${LIB:%=lib/%.${SO}} ${LIB:%=lib/${SONAME-%}.${SO}} \
-		${BIN:%=bin/%${EXE}} man art *.stamp 2>/dev/null || true
+		${BIN:%=bin/%${EXE}} ${CLEAN_EXTRA} 2>/dev/null || true
+
+clean-extra::
+
 
 install-share-dirs := ${share-dirs:%=share/${share-dir}/%}
 install-share-dirs := ${install-share-dirs:%=${DESTDIR}${PREFIX}/%} ${DESTDIR}${PREFIX}/share/${share-dir}
@@ -189,4 +194,4 @@ clean-wasm:
 
 clean: clean-wasm
 
-.PHONY: all docs docs-bin compress-man clean install uninstall wasm clean-wasm
+.PHONY: all docs docs-bin compress-man clean clean-extra install uninstall wasm clean-wasm
