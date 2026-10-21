@@ -35,7 +35,7 @@
 
 - `portable.mk` — Platform and OS detection, shared library extension (`.so`, `.dylib`), and C99 compiler flag normalization (`-Wall -Wextra -pedantic`).
 - `include.mk` — Core build rules for shared and static libraries, binary executables, test execution, and system installation.
-- `glfw.mk` — Optional configuration for immediate-mode GUI and OpenGL libraries (`libqgl`).
+- `glfw.mk` — Optional configuration for immediate-mode GUI and OpenGL libraries (`liblamina` / `libqgl`).
 
 ---
 
