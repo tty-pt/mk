@@ -35,6 +35,7 @@
 
 - `portable.mk` — Platform and OS detection, shared library extension (`.so`, `.dylib`), and C99 compiler flag normalization (`-Wall -Wextra -pedantic`).
 - `include.mk` — Core build rules for shared and static libraries, binary executables, test execution, and system installation.
+- `iso.mk` — Reusable Isomorphic C build module: toolchain flags (`-fvisibility=hidden`, `-Wl,--gc-sections`, `-Wl,--no-entry`), `<ttypt/iso.h>` integration, and automated `check-wasm` ABI verification.
 - `glfw.mk` — Optional configuration for immediate-mode GUI and OpenGL libraries (`liblamina` / `libqgl`).
 
 ---

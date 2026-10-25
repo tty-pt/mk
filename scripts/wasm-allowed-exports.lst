@@ -1,0 +1,38 @@
+# Standard WASI Reactor & Runtime
+_initialize
+__wasm_call_ctors
+memory
+__indirect_function_table
+malloc
+free
+
+# Bud Application Lifecycle & DOM Operations
+bud_app_mount
+bud_app_update
+bud_app_unmount
+bud_app_mark_dirty
+bud_app_flush
+bud_app_dispatch
+bud_app_render
+bud_patch_innerhtml
+
+# State Hydration & Callbacks
+wasm_init
+wasm_fetch_callback
+wasm_get_runtime
+wasm_dump_tree
+wasm_get_tree_text
+wasm_get_src
+
+# Web HAL & Viewport Capabilities
+wasm_tick
+wasm_canvas_render
+wasm_ws_on_channel
+wasm_ws_on_message
+wasm_ws_on_open
+wasm_ws_on_close
+wasm_term_on_input
+
+# Dynamic Module Runtime
+xy_install
+xy_uninstall

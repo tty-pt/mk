@@ -91,5 +91,5 @@ LDLIBS-alpine := -lbsd
 
 WASI_CC    ?= clang
 WASI_SYSROOT ?=
-WASM_CFLAGS   ?= -O2 -D__wasm__ --target=wasm32-wasi
-WASM_LDFLAGS  ?= -mexec-model=reactor -Wl,--export-all -Wl,--allow-undefined
+WASM_CFLAGS   ?= -O2 -D__wasm__ --target=wasm32-wasi -fvisibility=hidden
+WASM_LDFLAGS  ?= -mexec-model=reactor -Wl,--gc-sections -Wl,--no-entry -Wl,--export=malloc -Wl,--export=free -Wl,--export=_initialize -Wl,--allow-undefined
