@@ -37,15 +37,24 @@ wasm_term_on_input
 xy_install
 xy_uninstall
 
-# Qsys Substrate Kernel Lifecycle & Slot Operations
-qsys_kernel_boot
-qsys_kernel_mount
-qsys_kernel_unmount
-qsys_kernel_update
-qsys_kernel_action
-qsys_kernel_tick
-qsys_kernel_version
-qsys_kernel_register_module
-qsys_kernel_dispatch_event
-qsys_wasm_version
+# Stele (stl_) Substrate Kernel Lifecycle & Slot Operations
+stl_kernel_boot
+stl_kernel_mount
+stl_kernel_unmount
+stl_kernel_update
+stl_kernel_action
+stl_kernel_tick
+stl_kernel_version
+stl_kernel_register_module
+stl_kernel_dispatch_event
+stele_kernel_boot
+stele_kernel_mount
+stele_kernel_unmount
+stele_kernel_update
+stele_kernel_action
+stele_kernel_tick
+stele_kernel_version
+stele_kernel_register_module
+stele_kernel_dispatch_event
+stele_wasm_version
 

@@ -89,7 +89,9 @@ LDLIBS += ${LDLIBS-${SYS}} \
 	  ${LDLIBS-${uname}} ${LDLIBS-${distro}}
 LDLIBS-alpine := -lbsd
 
-WASI_CC    ?= clang
-WASI_SYSROOT ?=
-WASM_CFLAGS   ?= -O2 -D__wasm__ --target=wasm32-wasi -fvisibility=hidden
-WASM_LDFLAGS  ?= -mexec-model=reactor -Wl,--gc-sections -Wl,--no-entry -Wl,--export=malloc -Wl,--export=free -Wl,--export=_initialize -Wl,--allow-undefined
+WASI_CC       ?= clang
+WASM_CC       ?= ${WASI_CC}
+WASI_SYSROOT  ?=
+WASM_CFLAGS   ?= --target=wasm32-wasi -ffreestanding -flto -O3 -D__wasm__ -fvisibility=hidden -I./include -I../include
+WASM_LDFLAGS  ?= -mexec-model=reactor -Wl,--gc-sections -Wl,--no-entry -Wl,--allow-undefined
+WASM_OPT      ?= $(shell command -v wasm-opt 2>/dev/null || true)
