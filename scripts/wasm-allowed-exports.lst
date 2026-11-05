@@ -18,6 +18,7 @@ bud_patch_innerhtml
 
 # State Hydration & Callbacks
 wasm_init
+wasm_init_bin
 wasm_action
 wasm_fetch_callback
 wasm_get_runtime
@@ -41,6 +42,7 @@ xy_uninstall
 # Stele (stl_) Substrate Kernel Lifecycle & Slot Operations
 stl_kernel_boot
 stl_kernel_mount
+stl_kernel_mount_bin
 stl_kernel_unmount
 stl_kernel_update
 stl_kernel_action
@@ -50,6 +52,7 @@ stl_kernel_register_module
 stl_kernel_dispatch_event
 stele_kernel_boot
 stele_kernel_mount
+stele_kernel_mount_bin
 stele_kernel_unmount
 stele_kernel_update
 stele_kernel_action
