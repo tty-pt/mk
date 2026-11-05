@@ -59,3 +59,19 @@ stele_kernel_register_module
 stele_kernel_dispatch_event
 stele_wasm_version
 
+# In-WASM Cross-Slot Event Bus
+stl_event_emit
+stl_event_on
+stl_event_off
+stl_on_event
+stele_event_emit
+stele_event_on
+stele_event_off
+stele_on_event
+
+# Client Optimistic Mutations
+stl_optimistic_update
+stl_optimistic_rollback
+stele_optimistic_update
+stele_optimistic_rollback
+

@@ -147,6 +147,9 @@ ISO_IMPORT(int, storage, stl_storage_set, const char *key, const char *val);
 ISO_IMPORT(int, canvas, stl_canvas_blit, int canvas_id, const void *pixels, int w, int h);
 ISO_IMPORT(int, clipboard, stl_clipboard_copy, const char *text);
 ISO_IMPORT(void, stele, stl_host_invalidate, int slot);
+ISO_IMPORT(void, stele, stl_host_event_emit,
+           const char *topic, size_t topic_len,
+           const void *payload, size_t payload_len);
 
 static inline void stl_invalidate(void) { stl_host_invalidate(-1); }
 static inline void stl_slot_invalidate(int slot) { stl_host_invalidate(slot); }
@@ -158,6 +161,7 @@ static inline void stl_slot_invalidate(int slot) { stl_host_invalidate(slot); }
 #define stele_host_fetch stl_host_fetch
 #define stele_host_set_location stl_host_set_location
 #define stele_host_invalidate stl_host_invalidate
+#define stele_host_event_emit stl_host_event_emit
 
 #else
 static inline void stl_invalidate(void) {}
@@ -165,6 +169,27 @@ static inline void stl_slot_invalidate(int slot) { (void)slot; }
 static inline void stele_invalidate(void) {}
 static inline void stele_slot_invalidate(int slot) { (void)slot; }
 #endif
+
+/**
+ * @brief In-WASM Cross-Slot Event Bus API
+ */
+typedef void (*stl_event_fn)(const char *topic, const void *payload, size_t len, void *user_data);
+
+int stl_event_emit(const char *topic, const void *payload, size_t len);
+int stl_event_on(const char *topic, stl_event_fn handler, void *user_data);
+int stl_event_off(const char *topic, stl_event_fn handler);
+
+#define stele_event_emit stl_event_emit
+#define stele_event_on stl_event_on
+#define stele_event_off stl_event_off
+
+/* Exported hooks for event dispatch across WASM instances and host bridges */
+ISO_EXPORT(int, stl_on_event,
+           const char *topic, size_t topic_len,
+           const void *payload, size_t payload_len);
+ISO_EXPORT_AS(int, stele_on_event, stl_on_event,
+           const char *topic, size_t topic_len,
+           const void *payload, size_t payload_len);
 
 #ifdef __cplusplus
 }
