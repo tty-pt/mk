@@ -18,6 +18,7 @@ bud_patch_innerhtml
 
 # State Hydration & Callbacks
 wasm_init
+wasm_action
 wasm_fetch_callback
 wasm_get_runtime
 wasm_dump_tree
