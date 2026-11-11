@@ -63,19 +63,18 @@ for wasm in $WASM_FILES; do
 	# 2. Audit Exports
 	if command -v wasm-objdump >/dev/null 2>&1; then
 		exports_out="$(wasm-objdump -j Export -x "$wasm" 2>/dev/null | grep -E 'func\[' | awk '{print $NF}' | tr -d '"' || true)"
-		for sym in $exports_out; do
-			allowed=0
-			if [ -f "$DEFAULT_EXPORTS_ALLOWLIST" ] && grep -qxE "$sym" "$DEFAULT_EXPORTS_ALLOWLIST"; then
-				allowed=1
-			elif [ -n "$EXTRA_EXPORTS_ALLOWLIST" ] && [ -f "$EXTRA_EXPORTS_ALLOWLIST" ] && grep -qxE "$sym" "$EXTRA_EXPORTS_ALLOWLIST"; then
-				allowed=1
+		if [ -n "$exports_out" ]; then
+			leaks=$(printf '%s\n' "$exports_out" | grep -vFxf "$DEFAULT_EXPORTS_ALLOWLIST" || true)
+			if [ -n "$leaks" ] && [ -n "$EXTRA_EXPORTS_ALLOWLIST" ] && [ -f "$EXTRA_EXPORTS_ALLOWLIST" ]; then
+				leaks=$(printf '%s\n' "$leaks" | grep -vFxf "$EXTRA_EXPORTS_ALLOWLIST" || true)
 			fi
-
-			if [ "$allowed" -eq 0 ]; then
-				echo "FAIL [exports]: $basename leaks unsanctioned symbol into export table: '$sym'" >&2
-				FAIL=1
+			if [ -n "$leaks" ]; then
+				for sym in $leaks; do
+					echo "FAIL [exports]: $basename leaks unsanctioned symbol into export table: '$sym'" >&2
+					FAIL=1
+				done
 			fi
-		done
+		fi
 	fi
 done
 

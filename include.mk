@@ -3,56 +3,58 @@ MPATH != if [ -n "${MPATH}" ]; then echo "${MPATH}"; elif [ -n "${.PARSEDIR}" ];
 include ${MPATH}/portable.mk
 
 WARN := -Wall -Wextra -Wpedantic
-CFLAGS += ${WARN}
 
-# NPM C-Dependency Auto-Discovery:
-# Automatically adds node_modules/@ttypt/*/include to CFLAGS if present
-NPM_TTYPT_INCLUDES := $(wildcard node_modules/@ttypt/*/include) \
-                      $(wildcard ../node_modules/@ttypt/*/include) \
-                      $(wildcard ../../node_modules/@ttypt/*/include)
-ifneq ($(NPM_TTYPT_INCLUDES),)
-CFLAGS += $(foreach inc,$(NPM_TTYPT_INCLUDES),-I$(inc))
-endif
+# NPM C-Dependency Auto-Discovery (portable across GNU Make and BSD Make):
+# Automatically adds node_modules/@tty-pt/*/include and node_modules/@ttypt/*/include to CFLAGS if present (except for root leaf libstele)
+npm_inc != [ "${bname}" != "libstele" ] && for d in node_modules/@tty-pt/*/include node_modules/@ttypt/*/include ../node_modules/@tty-pt/*/include ../node_modules/@ttypt/*/include ../../node_modules/@tty-pt/*/include ../../node_modules/@ttypt/*/include; do [ -d "$$d" ] && echo "-I$$d"; done || true
+CFLAGS := ${WARN} ${npm_inc} ${CFLAGS}
+
+# Centralized WebAssembly Toolchain & Optimization Rules
+WASM_CC ?= clang
+WASM_CFLAGS ?= --target=wasm32-wasi -ffreestanding -flto -O3 -D__wasm__ -fvisibility=hidden -I./include -I../include ${npm_inc}
+WASM_LDFLAGS ?= -mexec-model=reactor -Wl,--gc-sections -Wl,--no-entry -Wl,--allow-undefined
+WASM_OPT != command -v wasm-opt 2>/dev/null || true
 
 share-dir ?= ${bname}
 all ?= ${bname}
 
-WASM := $(shell echo "${all}" | tr ' ' '\n' | grep '\.wasm' || true)
-WASM != echo "${all}" | tr ' ' '\n' | grep '\.wasm' || true
-LIB := $(shell echo "${all}" | tr ' ' '\n' | grep '^lib' || true)
 LIB != echo "${all}" | tr ' ' '\n' | grep '^lib' || true
-BIN := $(shell echo "${all}" | tr ' ' '\n' | grep -v '^lib' | grep -v '\.wasm' || true)
 BIN != echo "${all}" | tr ' ' '\n' | grep -v '^lib' | grep -v '\.wasm' || true
 
 INSTALL_BIN ?= ${BIN}
 
-ONELIB := $(shell echo "${LIB}" | awk '{print $$1}')
-ONELIB != echo "${LIB}" | awk '{print $$1}'
+ONELIB != set -- ${LIB}; echo "$$1"
 ONELIB := ${ONELIB:lib%=%}
 
+WASM_PATH ?= npm/dist
+WASM != if [ -n "${WASM_SRCS}" ]; then echo "${ONELIB}.wasm"; fi
+
+WASM_MACRO_EXPORTS != for f in ${WASM_SRCS}; do [ -f "$$f" ] && awk -F'[(),]' '/ISO_EXPORT_AS/ {gsub(/[[:space:]]/, "", $$4); if ($$4 != "") print $$4; next} /(ISO_EXPORT|WASM_EXPORT)/ {gsub(/[[:space:]]/, "", $$3); if ($$3 != "") print $$3}' "$$f" 2>/dev/null; done | sort -u || true
+
+ALL_WASM_EXPORTS = ${WASM_EXPORTS} ${WASM_MACRO_EXPORTS}
+
+WASM_EXPORT_FLAGS := ${ALL_WASM_EXPORTS:%=-Wl,--export=%}
+
+wasmtarget := ${WASM:%=${WASM_PATH}/%}
+
 FOLDER ?= ttypt
-HEADERS := $(shell ls include/${FOLDER} 2>/dev/null || true)
-HEADERS != ls include/${FOLDER} 2>/dev/null || true
-HEADERS := ${HEADERS:%=${FOLDER}/%}
+HEADERS != [ -d include ] && (cd include && find . -type f -name '*.h' | sed 's|^\./||') 2>/dev/null || true
 
 .SUFFIXES: .${SO} .m .c .o .cpp
 
-WASM_PATH ?= .
-all := objects-set.mk ${LIB:%=lib/%.${SO}} ${BIN:%=bin/%${EXE}} ${WASM:%=${WASM_PATH}/%}
+all := objects-set.mk ${LIB:%=lib/%.${SO}} ${BIN:%=bin/%${EXE}}
 
 all: ${all}
 
-LIB-obj-default := $(shell for l in ${LIB}; do echo "src/$$l.o"; done)
-LIB-obj-default != for l in ${LIB}; do echo "src/$$l.o"; done
-BIN-obj-default := $(shell for b in ${BIN}; do echo "src/$$b.o"; done)
-BIN-obj-default != for b in ${BIN}; do echo "src/$$b.o"; done
+LIB-obj-default != [ -n "${LIB}" ] && for l in ${LIB}; do echo "src/$$l.o"; done || true
+BIN-obj-default != [ -n "${BIN}" ] && for b in ${BIN}; do echo "src/$$b.o"; done || true
 
 LIB-obj-y ?= ${LIB-obj-default} ${${LIB:%=%-obj-y}} ${${LIB:%=%-obj-y-${uname}}}
 BIN-obj-y ?= ${BIN-obj-default} ${${BIN:%=%-obj-y}} ${${BIN:%=%-obj-y-${uname}}}
 
 CFLAGS-LIB := -fPIC ${EXTRA_CFLAGS}
 
-objects-set.mk:
+objects-set.mk: Makefile
 	@rm -f $@
 	@for obj in ${LIB-obj-y} ""; do \
 		[ -z "$$obj" ] && continue; \
@@ -77,11 +79,13 @@ info:
 	@echo HEADERS ${HEADERS}
 
 bintarget := ${BIN:%=bin/%${EXE}}
-$(bintarget): ${LIB:%=lib/%.${SO}} bin ${BIN-obj-y}
+$(bintarget): ${LIB:%=lib/%.${SO}} ${BIN-obj-y}
+	@mkdir -p ${@D}
 	${cc} -o $@ ${@:bin/%${EXE}=src/%.o} ${${@:bin/%${EXE}=%}-obj-y} ${LDFLAGS} ${LDFLAGS-${@:bin/%${EXE}=%}} ${LDFLAGS-${@:bin/%${EXE}=%}-${SYS}} ${LDFLAGS-${@:bin/%${EXE}=%}-${uname}} ${LDLIBS-${@:bin/%${EXE}=%}-${SYS}} ${LDLIBS-${@:bin/%${EXE}=%}} ${LDLIBS-${@:bin/%${EXE}=%}-${uname}} ${LDLIBS}
 
 libtarget := ${LIB:%=lib/%.${SO}}
-$(libtarget): lib ${LIB:%=src/%.o} ${LIB-obj-y}
+$(libtarget): ${LIB:%=src/%.o} ${LIB-obj-y}
+	@mkdir -p ${@D}
 	${cc} -o $@ ${@:lib/%.${SO}=src/%.o} ${${@:lib/%.${SO}=%}-obj-y} ${${@:lib/%.${SO}=%}-obj-y-${uname}} -shared ${LDFLAGS} ${LDFLAGS-${@:lib/%.${SO}=%}-${SYS}} ${LDFLAGS-${@:lib/%.${SO}=%}-${uname}} ${LDFLAGS-${@:lib/%.${SO}=%}} ${LDLIBS-${@:lib/%.${SO}=%}} ${LDLIBS-${@:lib/%.${SO}=%}-${SYS}} ${LDLIBS-${@:lib/%.${SO}=%}-${uname}} ${LDLIBS}
 	@test -z "${SONAME-${@:lib/%.${SO}=%}}" || ln -sf ${@:lib/%=%} lib/${SONAME-${@:lib/%.${SO}=%}}.${SO}
 
@@ -89,8 +93,7 @@ $(libtarget): lib ${LIB:%=src/%.o} ${LIB-obj-y}
 	@rm -f $@.d; ${cc} ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} -MM -MP -MT $@ $< > $@.d 2>/dev/null || true
 	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} $<
 
-DEP_FILES := $(shell for f in ${LIB-obj-y} ${BIN-obj-y}; do [ -n "$$f" ] && [ -f "$${f%.o}.o.d" ] && echo "$${f%.o}.o.d"; done; echo '/dev/null')
-DEP_FILES != for f in ${LIB-obj-y} ${BIN-obj-y}; do [ -n "$$f" ] && [ -f "$${f%.o}.o.d" ] && echo "$${f%.o}.o.d"; done; echo '/dev/null'
+DEP_FILES != for f in ${LIB-obj-y} ${BIN-obj-y}; do [ -f "$${f%.o}.o.d" ] && echo "$${f%.o}.o.d"; done; echo '/dev/null'
 -include ${DEP_FILES}
 
 .m.o:
@@ -127,6 +130,7 @@ $(installed-pc): ${ONELIB:%=%.pc} ${DESTDIR}${PREFIX}/lib/pkgconfig
 installed-headers := ${HEADERS:%=include/%}
 installed-headers := ${installed-headers:%=${DESTDIR}${PREFIX}/%}
 $(installed-headers): ${DESTDIR}${PREFIX}/include ${HEADERS:%=include/%}
+	mkdir -p ${@D}
 	install -m 644 ${@:${DESTDIR}${PREFIX}/%=%} $@
 
 installed-libs := ${LIB:%=lib/%.${SO}}
@@ -156,9 +160,7 @@ install-info:
 	@echo ${installed-bin}
 
 
-MAN3 := $(shell test -f Doxyfile && ls man/*.3 2>/dev/null || true)
 MAN3 != test -f Doxyfile && ls man/*.3 2>/dev/null || true
-MAN1 := $(shell test -f Doxyfile && ls man/*.1 2>/dev/null || true)
 MAN1 != test -f Doxyfile && ls man/*.1 2>/dev/null || true
 
 docs: docs-bin
@@ -188,18 +190,17 @@ install: ${install-dirs} ${installed-headers} ${installed-libs} ${installed-shar
 uninstall:
 	rm -rf ${installed-headers} ${installed-libs} ${installed-share} ${installed-bin} ${installed-lib-${SYS}} ${installed-dep-dlls-${SYS}} ${install-share-dirs} ${installed-man3} ${installed-man1}
 
-${WASM_PATH}/%.wasm:
-	@if echo 'int main(void){}' | ${WASI_CC} ${WASM_CFLAGS} -x c - -c -o /dev/null >/dev/null 2>&1; then \
-		${WASI_CC} \
-			$($*-cflags) ${WASM_CFLAGS} ${WASM_LDFLAGS} -o $@ $($*-src); \
-	else \
-		echo "Skipping WASM build of $@ — see README.md (WASM Setup)"; \
+wasm: ${wasmtarget}
+
+$(wasmtarget): ${WASM_SRCS}
+	@if [ -n "${WASM_SRCS}" ]; then \
+		mkdir -p ${@D} && \
+		${WASM_CC} ${WASM_CFLAGS} ${WASM_EXTRA_CFLAGS} ${WASM_LDFLAGS} ${WASM_EXPORT_FLAGS} -o $@ ${WASM_SRCS} && \
+		if [ -n "${WASM_OPT}" ]; then ${WASM_OPT} -O3 $@ -o $@ 2>/dev/null || true; fi; \
 	fi
 
-wasm: ${WASM:%=${WASM_PATH}/%}
-
 clean-wasm:
-	rm -f ${WASM:%=${WASM_PATH}/%}
+	rm -f ${wasmtarget}
 
 clean: clean-wasm
 
