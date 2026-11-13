@@ -6,8 +6,8 @@ WARN := -Wall -Wextra -Wpedantic
 
 # NPM C-Dependency Auto-Discovery (portable across GNU Make and BSD Make):
 # Automatically adds node_modules/@tty-pt/*/include and node_modules/@ttypt/*/include to CFLAGS if present (except for root leaf libstele)
-npm_inc := $(shell [ "${bname}" != "libstele" ] && for d in node_modules/@tty-pt/*/include node_modules/@ttypt/*/include ../node_modules/@tty-pt/*/include ../node_modules/@ttypt/*/include ../../node_modules/@tty-pt/*/include ../../node_modules/@ttypt/*/include; do [ -d "$$d" ] && echo "-I$$d"; done || true)
-npm_inc != [ "${bname}" != "libstele" ] && for d in node_modules/@tty-pt/*/include node_modules/@ttypt/*/include ../node_modules/@tty-pt/*/include ../node_modules/@ttypt/*/include ../../node_modules/@tty-pt/*/include ../../node_modules/@ttypt/*/include; do [ -d "$$d" ] && echo "-I$$d"; done || true
+npm_inc := $(shell [ "${bname}" != "libstele" ] && for d in npm/node_modules/@tty-pt/*/include npm/node_modules/@ttypt/*/include node_modules/@tty-pt/*/include node_modules/@ttypt/*/include ../node_modules/@tty-pt/*/include ../node_modules/@ttypt/*/include ../../node_modules/@tty-pt/*/include ../../node_modules/@ttypt/*/include; do [ -d "$$d" ] && echo "-I$$d"; done || true)
+npm_inc != [ "${bname}" != "libstele" ] && for d in npm/node_modules/@tty-pt/*/include npm/node_modules/@ttypt/*/include node_modules/@tty-pt/*/include node_modules/@ttypt/*/include ../node_modules/@tty-pt/*/include ../node_modules/@ttypt/*/include ../../node_modules/@tty-pt/*/include ../../node_modules/@ttypt/*/include; do [ -d "$$d" ] && echo "-I$$d"; done || true
 CFLAGS := ${WARN} ${npm_inc} ${CFLAGS}
 
 # Centralized WebAssembly Toolchain & Optimization Rules
