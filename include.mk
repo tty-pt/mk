@@ -6,6 +6,7 @@ WARN := -Wall -Wextra -Wpedantic
 
 # NPM C-Dependency Auto-Discovery (portable across GNU Make and BSD Make):
 # Automatically adds node_modules/@tty-pt/*/include and node_modules/@ttypt/*/include to CFLAGS if present (except for root leaf libstele)
+npm_inc := $(shell [ "${bname}" != "libstele" ] && for d in node_modules/@tty-pt/*/include node_modules/@ttypt/*/include ../node_modules/@tty-pt/*/include ../node_modules/@ttypt/*/include ../../node_modules/@tty-pt/*/include ../../node_modules/@ttypt/*/include; do [ -d "$$d" ] && echo "-I$$d"; done || true)
 npm_inc != [ "${bname}" != "libstele" ] && for d in node_modules/@tty-pt/*/include node_modules/@ttypt/*/include ../node_modules/@tty-pt/*/include ../node_modules/@ttypt/*/include ../../node_modules/@tty-pt/*/include ../../node_modules/@ttypt/*/include; do [ -d "$$d" ] && echo "-I$$d"; done || true
 CFLAGS := ${WARN} ${npm_inc} ${CFLAGS}
 
@@ -13,22 +14,28 @@ CFLAGS := ${WARN} ${npm_inc} ${CFLAGS}
 WASM_CC ?= clang
 WASM_CFLAGS ?= --target=wasm32-wasi -ffreestanding -flto -O3 -D__wasm__ -fvisibility=hidden -I./include -I../include ${npm_inc}
 WASM_LDFLAGS ?= -mexec-model=reactor -Wl,--gc-sections -Wl,--no-entry -Wl,--allow-undefined
+WASM_OPT := $(shell command -v wasm-opt 2>/dev/null || true)
 WASM_OPT != command -v wasm-opt 2>/dev/null || true
 
 share-dir ?= ${bname}
 all ?= ${bname}
 
+LIB := $(shell echo "${all}" | tr ' ' '\n' | grep '^lib' || true)
 LIB != echo "${all}" | tr ' ' '\n' | grep '^lib' || true
+BIN := $(shell echo "${all}" | tr ' ' '\n' | grep -v '^lib' | grep -v '\.wasm' || true)
 BIN != echo "${all}" | tr ' ' '\n' | grep -v '^lib' | grep -v '\.wasm' || true
 
 INSTALL_BIN ?= ${BIN}
 
+ONELIB := $(shell set -- ${LIB}; echo "$$1")
 ONELIB != set -- ${LIB}; echo "$$1"
 ONELIB := ${ONELIB:lib%=%}
 
 WASM_PATH ?= npm/dist
+WASM := $(shell if [ -n "${WASM_SRCS}" ]; then echo "${ONELIB}.wasm"; fi)
 WASM != if [ -n "${WASM_SRCS}" ]; then echo "${ONELIB}.wasm"; fi
 
+WASM_MACRO_EXPORTS := $(shell for f in ${WASM_SRCS}; do [ -f "$$f" ] && awk -F'[(),]' '/ISO_EXPORT_AS/ {gsub(/[[:space:]]/, "", $$4); if ($$4 != "") print $$4; next} /(ISO_EXPORT|WASM_EXPORT)/ {gsub(/[[:space:]]/, "", $$3); if ($$3 != "") print $$3}' "$$f" 2>/dev/null; done | sort -u || true)
 WASM_MACRO_EXPORTS != for f in ${WASM_SRCS}; do [ -f "$$f" ] && awk -F'[(),]' '/ISO_EXPORT_AS/ {gsub(/[[:space:]]/, "", $$4); if ($$4 != "") print $$4; next} /(ISO_EXPORT|WASM_EXPORT)/ {gsub(/[[:space:]]/, "", $$3); if ($$3 != "") print $$3}' "$$f" 2>/dev/null; done | sort -u || true
 
 ALL_WASM_EXPORTS = ${WASM_EXPORTS} ${WASM_MACRO_EXPORTS}
@@ -38,6 +45,7 @@ WASM_EXPORT_FLAGS := ${ALL_WASM_EXPORTS:%=-Wl,--export=%}
 wasmtarget := ${WASM:%=${WASM_PATH}/%}
 
 FOLDER ?= ttypt
+HEADERS := $(shell [ -d include ] && (cd include && find . -type f -name '*.h' | sed 's|^\./||') 2>/dev/null || true)
 HEADERS != [ -d include ] && (cd include && find . -type f -name '*.h' | sed 's|^\./||') 2>/dev/null || true
 
 .SUFFIXES: .${SO} .m .c .o .cpp
@@ -46,7 +54,9 @@ all := objects-set.mk ${LIB:%=lib/%.${SO}} ${BIN:%=bin/%${EXE}}
 
 all: ${all}
 
+LIB-obj-default := $(shell [ -n "${LIB}" ] && for l in ${LIB}; do echo "src/$$l.o"; done || true)
 LIB-obj-default != [ -n "${LIB}" ] && for l in ${LIB}; do echo "src/$$l.o"; done || true
+BIN-obj-default := $(shell [ -n "${BIN}" ] && for b in ${BIN}; do echo "src/$$b.o"; done || true)
 BIN-obj-default != [ -n "${BIN}" ] && for b in ${BIN}; do echo "src/$$b.o"; done || true
 
 LIB-obj-y ?= ${LIB-obj-default} ${${LIB:%=%-obj-y}} ${${LIB:%=%-obj-y-${uname}}}
@@ -93,6 +103,7 @@ $(libtarget): ${LIB:%=src/%.o} ${LIB-obj-y}
 	@rm -f $@.d; ${cc} ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} -MM -MP -MT $@ $< > $@.d 2>/dev/null || true
 	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} $<
 
+DEP_FILES := $(shell for f in ${LIB-obj-y} ${BIN-obj-y}; do [ -f "$${f%.o}.o.d" ] && echo "$${f%.o}.o.d"; done; echo '/dev/null')
 DEP_FILES != for f in ${LIB-obj-y} ${BIN-obj-y}; do [ -f "$${f%.o}.o.d" ] && echo "$${f%.o}.o.d"; done; echo '/dev/null'
 -include ${DEP_FILES}
 
@@ -160,7 +171,9 @@ install-info:
 	@echo ${installed-bin}
 
 
+MAN3 := $(shell test -f Doxyfile && ls man/*.3 2>/dev/null || true)
 MAN3 != test -f Doxyfile && ls man/*.3 2>/dev/null || true
+MAN1 := $(shell test -f Doxyfile && ls man/*.1 2>/dev/null || true)
 MAN1 != test -f Doxyfile && ls man/*.1 2>/dev/null || true
 
 docs: docs-bin
