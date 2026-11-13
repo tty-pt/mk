@@ -12,7 +12,7 @@ CFLAGS := ${WARN} ${npm_inc} ${CFLAGS}
 
 # Centralized WebAssembly Toolchain & Optimization Rules
 WASM_CC ?= clang
-WASM_CFLAGS ?= --target=wasm32-wasi -ffreestanding -flto -O3 -D__wasm__ -fvisibility=hidden -I./include -I../include -I../libstele/include -I../mk/include ${npm_inc}
+WASM_CFLAGS += -I../libstele/include -I../mk/include ${npm_inc}
 WASM_LDFLAGS ?=
 WASM_OPT := $(shell command -v wasm-opt 2>/dev/null || true)
 WASM_OPT != command -v wasm-opt 2>/dev/null || true
