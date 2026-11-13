@@ -47,6 +47,7 @@ stl_kernel_unmount
 stl_kernel_update
 stl_kernel_action
 stl_kernel_tick
+stl_kernel_has_tick
 stl_kernel_version
 stl_kernel_register_module
 stl_kernel_dispatch_event
@@ -57,6 +58,7 @@ stele_kernel_unmount
 stele_kernel_update
 stele_kernel_action
 stele_kernel_tick
+stele_kernel_has_tick
 stele_kernel_version
 stele_kernel_register_module
 stele_kernel_dispatch_event
