@@ -12,11 +12,11 @@ CC      ?= clang
 WASI_CC ?= clang
 
 # Native Shared Library Flags
-ISO_SO_CFLAGS   += -fPIC -fvisibility=hidden -I$(MK_ISO_DIR)../libqsys/include -I$(MK_ISO_DIR)include
+ISO_SO_CFLAGS   += -fPIC -fvisibility=hidden -I$(MK_ISO_DIR)../libstele/include -I$(MK_ISO_DIR)include
 ISO_SO_LDFLAGS  += -shared
 
 # WebAssembly Reactor Flags
-ISO_WASM_CFLAGS  += --target=wasm32-wasi -fvisibility=hidden -D__wasm__ -I$(MK_ISO_DIR)../libqsys/include -I$(MK_ISO_DIR)include
+ISO_WASM_CFLAGS  += --target=wasm32-wasi -fvisibility=hidden -D__wasm__ -I$(MK_ISO_DIR)../libstele/include -I$(MK_ISO_DIR)include
 ISO_WASM_LDFLAGS += -mexec-model=reactor \
                     -Wl,--gc-sections \
                     -Wl,--no-entry \
