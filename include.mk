@@ -12,8 +12,8 @@ CFLAGS := ${WARN} ${npm_inc} ${CFLAGS}
 
 # Centralized WebAssembly Toolchain & Optimization Rules
 WASM_CC ?= clang
-WASM_CFLAGS ?= --target=wasm32-wasi -ffreestanding -flto -O3 -D__wasm__ -fvisibility=hidden -I./include -I../include ${npm_inc}
-WASM_LDFLAGS ?= -mexec-model=reactor -Wl,--gc-sections -Wl,--no-entry -Wl,--allow-undefined
+WASM_CFLAGS ?= --target=wasm32-wasi -ffreestanding -flto -O3 -D__wasm__ -fvisibility=hidden -I./include -I../include -I../libstele/include -I../mk/include ${npm_inc}
+WASM_LDFLAGS ?=
 WASM_OPT := $(shell command -v wasm-opt 2>/dev/null || true)
 WASM_OPT != command -v wasm-opt 2>/dev/null || true
 
@@ -31,8 +31,62 @@ ONELIB := $(shell set -- ${LIB}; echo "$$1")
 ONELIB != set -- ${LIB}; echo "$$1"
 ONELIB := ${ONELIB:lib%=%}
 
+# Canonical non-overlapping --global-base registry:
+# [65536 .. 2097152) is reserved for downstream reactor static data & 32KB stacks.
+# stele.wasm sits at 2097152 (2 MB) and its dlmalloc heap grows upward from ~2.07 MB to 4 GB.
+WASM_GLOBAL_BASE ?= $(shell case "${ONELIB}" in \
+	stele) echo 2097152 ;; \
+	corm) echo 65536 ;; \
+	lemma) echo 196608 ;; \
+	sepal) echo 327680 ;; \
+	joint) echo 458752 ;; \
+	islet) echo 720896 ;; \
+	hyle) echo 851968 ;; \
+	xylem) echo 983040 ;; \
+	hyle-source) echo 1114112 ;; \
+	pitch|transp) echo 1245184 ;; \
+	bud) echo 1376256 ;; \
+	lamina) echo 1507328 ;; \
+	chaff|noise) echo 1638400 ;; \
+	areole|chunk) echo 1769472 ;; \
+	axil-auren|auren) echo 1900544 ;; \
+	*) echo 2031616 ;; \
+esac)
+WASM_GLOBAL_BASE != case "${ONELIB}" in \
+	stele) echo 2097152 ;; \
+	corm) echo 65536 ;; \
+	lemma) echo 196608 ;; \
+	sepal) echo 327680 ;; \
+	joint) echo 458752 ;; \
+	islet) echo 720896 ;; \
+	hyle) echo 851968 ;; \
+	xylem) echo 983040 ;; \
+	hyle-source) echo 1114112 ;; \
+	pitch|transp) echo 1245184 ;; \
+	bud) echo 1376256 ;; \
+	lamina) echo 1507328 ;; \
+	chaff|noise) echo 1638400 ;; \
+	areole|chunk) echo 1769472 ;; \
+	axil-auren|auren) echo 1900544 ;; \
+	*) echo 2031616 ;; \
+esac
+
+WASM_CORE_LDFLAGS := $(shell if [ "${bname}" = "libstele" ] || [ "${ONELIB}" = "stele" ]; then \
+	echo "-mexec-model=reactor -Wl,--gc-sections -Wl,--no-entry -Wl,--allow-undefined -Wl,--global-base=${WASM_GLOBAL_BASE} -Wl,--initial-memory=16777216 -Wl,--export=malloc -Wl,--export=free -Wl,--export=calloc -Wl,--export=realloc"; \
+else \
+	echo "-mexec-model=reactor -Wl,--gc-sections -Wl,--no-entry -Wl,--allow-undefined -Wl,--import-memory -Wl,-z,stack-size=32768 -Wl,--global-base=${WASM_GLOBAL_BASE} -Wl,--wrap=malloc -Wl,--wrap=free -Wl,--wrap=calloc -Wl,--wrap=realloc"; \
+fi)
+WASM_CORE_LDFLAGS != if [ "${bname}" = "libstele" ] || [ "${ONELIB}" = "stele" ]; then \
+	echo "-mexec-model=reactor -Wl,--gc-sections -Wl,--no-entry -Wl,--allow-undefined -Wl,--global-base=${WASM_GLOBAL_BASE} -Wl,--initial-memory=16777216 -Wl,--export=malloc -Wl,--export=free -Wl,--export=calloc -Wl,--export=realloc"; \
+else \
+	echo "-mexec-model=reactor -Wl,--gc-sections -Wl,--no-entry -Wl,--allow-undefined -Wl,--import-memory -Wl,-z,stack-size=32768 -Wl,--global-base=${WASM_GLOBAL_BASE} -Wl,--wrap=malloc -Wl,--wrap=free -Wl,--wrap=calloc -Wl,--wrap=realloc"; \
+fi
+
+WASM_ALLOC_SHIM := $(shell if [ "${bname}" != "libstele" ] && [ "${ONELIB}" != "stele" ] && [ -f "${MPATH}/wasm_alloc_shim.c" ]; then echo "${MPATH}/wasm_alloc_shim.c"; fi)
+WASM_ALLOC_SHIM != if [ "${bname}" != "libstele" ] && [ "${ONELIB}" != "stele" ] && [ -f "${MPATH}/wasm_alloc_shim.c" ]; then echo "${MPATH}/wasm_alloc_shim.c"; fi
+
 WASM_PATH ?= npm/dist
-WASM := $(shell if [ -n "${WASM_SRCS}" ]; then echo "${ONELIB}.wasm"; fi)
+WASM ?= $(shell if [ -n "${WASM_SRCS}" ]; then echo "${ONELIB}.wasm"; fi)
 WASM != if [ -n "${WASM_SRCS}" ]; then echo "${ONELIB}.wasm"; fi
 
 WASM_MACRO_EXPORTS := $(shell for f in ${WASM_SRCS}; do [ -f "$$f" ] && awk -F'[(),]' '/ISO_EXPORT_AS/ {gsub(/[[:space:]]/, "", $$4); if ($$4 != "") print $$4; next} /(ISO_EXPORT|WASM_EXPORT)/ {gsub(/[[:space:]]/, "", $$3); if ($$3 != "") print $$3}' "$$f" 2>/dev/null; done | sort -u || true)
@@ -205,10 +259,10 @@ uninstall:
 
 wasm: ${wasmtarget}
 
-$(wasmtarget): ${WASM_SRCS}
+$(wasmtarget): ${WASM_SRCS} ${WASM_ALLOC_SHIM}
 	@if [ -n "${WASM_SRCS}" ]; then \
 		mkdir -p ${@D} && \
-		${WASM_CC} ${WASM_CFLAGS} ${WASM_EXTRA_CFLAGS} ${WASM_LDFLAGS} ${WASM_EXPORT_FLAGS} -o $@ ${WASM_SRCS} && \
+		${WASM_CC} ${WASM_CFLAGS} ${WASM_EXTRA_CFLAGS} ${WASM_CORE_LDFLAGS} ${WASM_LDFLAGS} ${WASM_EXPORT_FLAGS} -o $@ ${WASM_SRCS} ${WASM_ALLOC_SHIM} && \
 		if [ -n "${WASM_OPT}" ]; then ${WASM_OPT} -O3 $@ -o $@ 2>/dev/null || true; fi; \
 	fi
 

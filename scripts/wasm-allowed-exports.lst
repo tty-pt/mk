@@ -5,6 +5,8 @@ memory
 __indirect_function_table
 malloc
 free
+calloc
+realloc
 
 # Bud Application Lifecycle & DOM Operations
 bud_app_mount
