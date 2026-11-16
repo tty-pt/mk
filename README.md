@@ -6,6 +6,8 @@
 
 > Portable shared Makefile snippets and build targets powering every library in the tty.pt C ecosystem.
 
+📖 **GitHub Repository**: [https://github.com/tty-pt/mk](https://github.com/tty-pt/mk#readme)
+
 `mk` provides unified platform detection, compiler flag normalization, automatic dependency tracking (`.d`), and standard installation rules shared across all libraries and modules under the `tty.pt` umbrella.
 
 ---
@@ -102,4 +104,4 @@ git clone https://github.com/tty-pt/mk.git
 
 ## License
 
-BSD 2-Clause License. Copyright (c) 2026, tty-pt. See `LICENSE`.
+BSD-2-Clause — Copyright (c) 2026, Paulo Quirino <quirinpa@gmail.com>. See [LICENSE](https://github.com/tty-pt/mk/blob/main/LICENSE).

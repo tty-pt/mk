@@ -8,11 +8,13 @@
     "helpers"
   ],
   "license": "BSD-2-Clause",
-  "author": "quirinpa@gmail.com",
+  "author": "Paulo Quirino <quirinpa@gmail.com>",
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "files": ["include.mk"]
+  "files": [
+    "include.mk"
+  ]
 }
