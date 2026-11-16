@@ -9,7 +9,7 @@ MK_ISO_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 
 # Toolchains
 CC      ?= clang
-WASI_CC ?= clang
+WASI_CC ?= $(shell which clang-18 2>/dev/null || which clang 2>/dev/null || echo clang)
 
 # Native Shared Library Flags
 ISO_SO_CFLAGS   += -fPIC -fvisibility=hidden -I$(MK_ISO_DIR)../libstele/include -I$(MK_ISO_DIR)include
