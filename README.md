@@ -33,9 +33,9 @@
 
 ## Module Snippets
 
-- `portable.mk` — Platform and OS detection, shared library extension (`.so`, `.dylib`), and C99 compiler flag normalization (`-Wall -Wextra -pedantic`).
-- `include.mk` — Core build rules for shared and static libraries, binary executables, test execution, and system installation.
-- `iso.mk` — Reusable Isomorphic C build module: toolchain flags (`-fvisibility=hidden`, `-Wl,--gc-sections`, `-Wl,--no-entry`), `<ttypt/iso.h>` integration, and automated `check-wasm` ABI verification.
+- `portable.mk` — Platform and OS detection, shared library extension (`.so`, `.dylib`), worktree staging prefix resolution (`WORKTREE_PREFIX`), and C99 compiler flag normalization (`-Wall -Wextra -pedantic`).
+- `include.mk` — Core build rules for shared and static libraries, binary executables, centralized WebAssembly reactor compilation (`make wasm` with `-Wl,--import-memory`, post-link `wasm-opt -O3`, and single-allocator `--wrap=malloc/free/calloc/realloc` routing via `scripts/wasm_alloc_shim.c`), test execution, and system installation.
+- `iso.mk` — Reusable Isomorphic C build module: toolchain flags (`-fvisibility=hidden`, `-Wl,--gc-sections`, `-Wl,--no-entry`), `<ttypt/iso.h>` and `<ttypt/stele_wasm.h>` integration, and automated `check-wasm` ABI verification (`scripts/wasm-audit.sh` enforcing single-allocator purity and export/import allowlists).
 - `glfw.mk` — Optional configuration for immediate-mode GUI and OpenGL libraries (`liblamina` / `libqgl`).
 
 ---
@@ -47,6 +47,8 @@ Every Makefile including `include.mk` inherits a uniform set of targets:
 | Target | Description |
 | :--- | :--- |
 | `all` | Build all default shared libraries (`lib/*.so`), static archives, and binaries (`bin/*`) |
+| `wasm` | Build freestanding shared-memory WebAssembly reactors (`$(WASM_MODS)`) linked against `@tty-pt/stele`'s single allocator |
+| `check-wasm` | Run `scripts/wasm-audit.sh` to verify export allowlists, import namespaces, and single-allocator invariants |
 | `test` | Compile and run in-tree unit test suites and regression scripts |
 | `clean` | Remove intermediate compilation objects (`.o`, `.d`) |
 | `distclean` | Clean all build artifacts, test binaries, and generated directories |
@@ -64,12 +66,14 @@ Override standard paths during `make` or in environment configuration:
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | `PREFIX` | `/usr/local` | Base installation directory |
+| `WORKTREE_PREFIX` | `$(REPO_ROOT)/.pi/stage` (in worktrees) | Automatic staging prefix for isolated `.pi/scratch/slot-*` git worktrees |
 | `BINDIR` | `$(PREFIX)/bin` | Binary executable directory |
 | `LIBDIR` | `$(PREFIX)/lib` | Shared and static library directory |
 | `INCDIR` | `$(PREFIX)/include/ttypt` | Public C header directory |
 | `MANDIR` | `$(PREFIX)/share/man` | Manual pages directory |
 | `DATADIR` | `$(PREFIX)/share` | Runtime application assets directory |
 | `PKGCONFIGDIR` | `$(LIBDIR)/pkgconfig` | Pkg-config `.pc` file directory |
+| `WASM_GLOBAL_BASE` | `65536` | Disjoint `--global-base` offset for shared-memory WebAssembly reactors |
 | `DEBUG` | `0` | Set `DEBUG=1` to enable debug symbols and disable optimization |
 
 ---
