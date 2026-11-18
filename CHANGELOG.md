@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added declarative `make wasm` target with automatic symbol extraction from `ISO_EXPORT` and `ISO_EXPORT_AS` using dual GNU Make and BSD Make portable assignment.
   - Integrated automated post-link `wasm-opt -O3` Binaryen pass, reducing `.wasm` binary footprints by 15% to 30%.
   - Added `@tty-pt/*` auto-include discovery in `npm_inc` (checking both root `node_modules/@tty-pt/*/include` and `npm/node_modules/@tty-pt/*/include`).
-  - Added event bus, optimistic updates, `wasm_init_bin`, and kernel mount exports to WASM allowlist.
+  - Added event bus, optimistic updates, `wasm_init_bin`, kernel mount, and workqueue (`stl_cpu_count`, `stl_wq_*`, `stele_wq_*`, `wq_*`) exports to `scripts/wasm-allowed-exports.lst`.
 - **Universal Substrate Headers**:
   - Added `include/ttypt/stele.h` and `include/ttypt/stele_wasm.h` kernel and client definitions.
 
@@ -28,8 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Prevent spurious relinking and batch export allowlist audits.
 
 ### Fixed
-- **Worktree Prefix, Header Installation & Local Prefix Priority (`include.mk`, `portable.mk`)**:
+- **Worktree Prefix, Header Installation, `clang-18` WASI Probing & Local Prefix Priority (`include.mk`, `portable.mk`, `iso.mk`)**:
   - Prioritized local `add-prefix-dirs` and `npm_inc` include/library flags before system `PREFIX` so worktree builds never resolve stale host headers or libraries in `/usr/local`.
+  - Probed `clang-18` for `WASI_CC` in `iso.mk` when available before falling back to `clang`.
   - Support `WORKTREE_PREFIX` and recursive header installation across isolated worktrees.
 
 ## [0.2.0] - 2026-10-25
