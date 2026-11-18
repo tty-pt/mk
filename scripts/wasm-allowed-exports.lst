@@ -82,3 +82,13 @@ stl_optimistic_rollback
 stele_optimistic_update
 stele_optimistic_rollback
 
+# Stele Multiplatform Workqueue (stl_wq)
+stl_cpu_count
+stl_wq_create
+stl_wq_submit
+stl_wq_step
+stl_wq_wait
+stl_wq_drain
+stl_wq_destroy
+stl_wq_worker_entry
+
