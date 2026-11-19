@@ -37,9 +37,11 @@ ONELIB := ${ONELIB:lib%=%}
 WASM_GLOBAL_BASE ?= $(shell case "${ONELIB}" in \
 	stele) echo 2097152 ;; \
 	corm) echo 65536 ;; \
+	mm) echo 131072 ;; \
 	lemma) echo 196608 ;; \
 	sepal) echo 327680 ;; \
 	joint) echo 458752 ;; \
+	jarvis) echo 589824 ;; \
 	islet) echo 720896 ;; \
 	hyle) echo 851968 ;; \
 	xylem) echo 983040 ;; \
@@ -55,9 +57,11 @@ esac)
 WASM_GLOBAL_BASE != case "${ONELIB}" in \
 	stele) echo 2097152 ;; \
 	corm) echo 65536 ;; \
+	mm) echo 131072 ;; \
 	lemma) echo 196608 ;; \
 	sepal) echo 327680 ;; \
 	joint) echo 458752 ;; \
+	jarvis) echo 589824 ;; \
 	islet) echo 720896 ;; \
 	hyle) echo 851968 ;; \
 	xylem) echo 983040 ;; \
