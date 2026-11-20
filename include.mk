@@ -117,8 +117,8 @@ LIB-obj-default != [ -n "${LIB}" ] && for l in ${LIB}; do echo "src/$$l.o"; done
 BIN-obj-default := $(shell [ -n "${BIN}" ] && for b in ${BIN}; do echo "src/$$b.o"; done || true)
 BIN-obj-default != [ -n "${BIN}" ] && for b in ${BIN}; do echo "src/$$b.o"; done || true
 
-LIB-obj-y ?= ${LIB-obj-default} ${${LIB:%=%-obj-y}} ${${LIB:%=%-obj-y-${uname}}}
-BIN-obj-y ?= ${BIN-obj-default} ${${BIN:%=%-obj-y}} ${${BIN:%=%-obj-y-${uname}}}
+LIB-obj-y ?= ${LIB-obj-default} $(foreach l,${LIB},${${l}-obj-y}) $(foreach l,${LIB},${${l}-obj-y-${uname}})
+BIN-obj-y ?= ${BIN-obj-default} $(foreach b,${BIN},${${b}-obj-y}) $(foreach b,${BIN},${${b}-obj-y-${uname}})
 
 CFLAGS-LIB := -fPIC ${EXTRA_CFLAGS}
 
@@ -149,12 +149,12 @@ info:
 bintarget := ${BIN:%=bin/%${EXE}}
 $(bintarget): ${LIB:%=lib/%.${SO}} ${BIN-obj-y}
 	@mkdir -p ${@D}
-	${cc} -o $@ ${@:bin/%${EXE}=src/%.o} ${${@:bin/%${EXE}=%}-obj-y} ${LDFLAGS} ${LDFLAGS-${@:bin/%${EXE}=%}} ${LDFLAGS-${@:bin/%${EXE}=%}-${SYS}} ${LDFLAGS-${@:bin/%${EXE}=%}-${uname}} ${LDLIBS-${@:bin/%${EXE}=%}-${SYS}} ${LDLIBS-${@:bin/%${EXE}=%}} ${LDLIBS-${@:bin/%${EXE}=%}-${uname}} ${LDLIBS}
+	${cc} -o $@.tmp ${@:bin/%${EXE}=src/%.o} ${${@:bin/%${EXE}=%}-obj-y} ${LDFLAGS} ${LDFLAGS-${@:bin/%${EXE}=%}} ${LDFLAGS-${@:bin/%${EXE}=%}-${SYS}} ${LDFLAGS-${@:bin/%${EXE}=%}-${uname}} ${LDLIBS-${@:bin/%${EXE}=%}-${SYS}} ${LDLIBS-${@:bin/%${EXE}=%}} ${LDLIBS-${@:bin/%${EXE}=%}-${uname}} ${LDLIBS} && mv -f $@.tmp $@
 
 libtarget := ${LIB:%=lib/%.${SO}}
 $(libtarget): ${LIB:%=src/%.o} ${LIB-obj-y}
 	@mkdir -p ${@D}
-	${cc} -o $@ ${@:lib/%.${SO}=src/%.o} ${${@:lib/%.${SO}=%}-obj-y} ${${@:lib/%.${SO}=%}-obj-y-${uname}} -shared ${LDFLAGS} ${LDFLAGS-${@:lib/%.${SO}=%}-${SYS}} ${LDFLAGS-${@:lib/%.${SO}=%}-${uname}} ${LDFLAGS-${@:lib/%.${SO}=%}} ${LDLIBS-${@:lib/%.${SO}=%}} ${LDLIBS-${@:lib/%.${SO}=%}-${SYS}} ${LDLIBS-${@:lib/%.${SO}=%}-${uname}} ${LDLIBS}
+	${cc} -o $@.tmp ${@:lib/%.${SO}=src/%.o} ${${@:lib/%.${SO}=%}-obj-y} ${${@:lib/%.${SO}=%}-obj-y-${uname}} -shared ${LDFLAGS} ${LDFLAGS-${@:lib/%.${SO}=%}-${SYS}} ${LDFLAGS-${@:lib/%.${SO}=%}-${uname}} ${LDFLAGS-${@:lib/%.${SO}=%}} ${LDLIBS-${@:lib/%.${SO}=%}} ${LDLIBS-${@:lib/%.${SO}=%}-${SYS}} ${LDLIBS-${@:lib/%.${SO}=%}-${uname}} ${LDLIBS} && mv -f $@.tmp $@
 	@test -z "${SONAME-${@:lib/%.${SO}=%}}" || ln -sf ${@:lib/%=%} lib/${SONAME-${@:lib/%.${SO}=%}}.${SO}
 
 .c.o:
