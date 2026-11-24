@@ -1,6 +1,7 @@
 MPATH := $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 MPATH != if [ -n "${MPATH}" ]; then echo "${MPATH}"; elif [ -n "${.PARSEDIR}" ]; then echo "${.PARSEDIR}"; elif [ -n "${MAKEFILE_LIST:M*include.mk:H}" ]; then echo "${MAKEFILE_LIST:M*include.mk:H}"; else echo "../mk"; fi
 include ${MPATH}/portable.mk
+include ${MPATH}/cx.mk
 
 WARN := -Wall -Wextra -Wpedantic
 
@@ -178,7 +179,7 @@ $(dirs):
 CLEAN_EXTRA ?=
 
 clean: clean-extra
-	@rm -rf src/*.o src/*.o.d src/*.d ${LIB:%=lib/%.${SO}} ${LIB:%=lib/${SONAME-%}.${SO}} \
+	@rm -rf src/*.o src/*.o.d src/*.d src/*.cx.c src/*.cx.h ${LIB:%=lib/%.${SO}} ${LIB:%=lib/${SONAME-%}.${SO}} \
 		${BIN:%=bin/%${EXE}} ${CLEAN_EXTRA} 2>/dev/null || true
 
 clean-extra::
