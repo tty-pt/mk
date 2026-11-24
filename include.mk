@@ -159,8 +159,7 @@ $(libtarget): ${LIB:%=src/%.o} ${LIB-obj-y}
 	@test -z "${SONAME-${@:lib/%.${SO}=%}}" || ln -sf ${@:lib/%=%} lib/${SONAME-${@:lib/%.${SO}=%}}.${SO}
 
 .c.o:
-	@rm -f $@.d; ${cc} ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} -MM -MP -MT $@ $< > $@.d 2>/dev/null || true
-	${cc} -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} $<
+	${cc} -MMD -MP -MT $@ -MF $@.d -c -o $@ ${CFLAGS} ${CFLAGS-${@:src/%.o=%-o}} $<
 
 DEP_FILES := $(shell for f in ${LIB-obj-y} ${BIN-obj-y}; do [ -f "$${f%.o}.o.d" ] && echo "$${f%.o}.o.d"; done; echo '/dev/null')
 DEP_FILES != for f in ${LIB-obj-y} ${BIN-obj-y}; do [ -f "$${f%.o}.o.d" ] && echo "$${f%.o}.o.d"; done; echo '/dev/null'
@@ -195,18 +194,18 @@ $(install-dirs) $(install-share-dirs):
 	install -d $@
 
 $(installed-pc): ${ONELIB:%=%.pc} ${DESTDIR}${PREFIX}/lib/pkgconfig
-	install -m 644 ${@:${DESTDIR}${PREFIX}/lib/pkgconfig/%=%} $@
+	@cmp -s ${@:${DESTDIR}${PREFIX}/lib/pkgconfig/%=%} $@ || install -m 644 ${@:${DESTDIR}${PREFIX}/lib/pkgconfig/%=%} $@
 
 installed-headers := ${HEADERS:%=include/%}
 installed-headers := ${installed-headers:%=${DESTDIR}${PREFIX}/%}
 $(installed-headers): ${DESTDIR}${PREFIX}/include ${HEADERS:%=include/%}
-	mkdir -p ${@D}
-	install -m 644 ${@:${DESTDIR}${PREFIX}/%=%} $@
+	@mkdir -p ${@D}
+	@cmp -s ${@:${DESTDIR}${PREFIX}/%=%} $@ || install -m 644 ${@:${DESTDIR}${PREFIX}/%=%} $@
 
 installed-libs := ${LIB:%=lib/%.${SO}}
 installed-libs := ${installed-libs:%=${DESTDIR}${PREFIX}/%}
 $(installed-libs): ${DESTDIR}${PREFIX}/lib ${LIB:%=lib/%.${SO}}
-	install -m 644 ${@:${DESTDIR}${PREFIX}/%=%} $@
+	@cmp -s ${@:${DESTDIR}${PREFIX}/%=%} $@ || install -m 644 ${@:${DESTDIR}${PREFIX}/%=%} $@
 	test -z "${SONAME-${@:${DESTDIR}${PREFIX}/lib/%.${SO}=%}}" || ln -sf ${@:${DESTDIR}${PREFIX}/lib/%=%} ${DESTDIR}${PREFIX}/lib/${SONAME-${@:${DESTDIR}${PREFIX}/lib/%.${SO}=%}}.${SO}
 
 installed-share := ${share:%=${DESTDIR}${PREFIX}/share/${share-dir}/%}
