@@ -85,7 +85,7 @@ if [ "$CHECK_SUBSTRATE" -eq 1 ]; then
 		[ -L "$w" ] && continue
 		b="$(basename "$w")"
 		case "$b" in
-			stele.wasm|axil-auren.wasm) continue ;;
+			stele.wasm|axil-auren.wasm|scribe_ux.wasm) continue ;;
 			chunk.wasm)
 				# chunk.wasm is an alias of areole.wasm
 				if [ -f "$REPO_ROOT/external/libareole/npm/dist/areole.wasm" ] && cmp -s "$w" "$REPO_ROOT/external/libareole/npm/dist/areole.wasm"; then
