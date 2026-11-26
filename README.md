@@ -36,8 +36,9 @@
 ## Module Snippets
 
 - `portable.mk` — Platform and OS detection, shared library extension (`.so`, `.dylib`), worktree staging prefix resolution (`WORKTREE_PREFIX`), and C99 compiler flag normalization (`-Wall -Wextra -pedantic`).
-- `include.mk` — Core build rules for shared and static libraries, binary executables, centralized WebAssembly reactor compilation (`make wasm` with `-Wl,--import-memory`, post-link `wasm-opt -O3`, and single-allocator `--wrap=malloc/free/calloc/realloc` routing via `scripts/wasm_alloc_shim.c`), test execution, and system installation.
-- `iso.mk` — Reusable Isomorphic C build module: toolchain flags (`-fvisibility=hidden`, `-Wl,--gc-sections`, `-Wl,--no-entry`), `<ttypt/iso.h>` and `<ttypt/stele_wasm.h>` integration, and automated `check-wasm` ABI verification (`scripts/wasm-audit.sh` enforcing single-allocator purity and export/import allowlists).
+- `cx.mk` — Portable `.cx` transpiler suffix rules (`.cx.cx.c`, `.cx.cx.h`) for GNU Make and BSD `bmake`, auto-probing `../libbud/bin/cx` or `cx` in `PATH` (included automatically by `include.mk`).
+- `include.mk` — Core build rules for shared and static libraries, binary executables (with atomic temp-file linking, single-invocation `-MMD -MP` dependency generation, and content-preserving `install`), centralized WebAssembly reactor compilation (`make wasm` with `-Wl,--import-memory`, per-library `WASM_GLOBAL_BASE` registry, post-link `wasm-opt -O3`, and single-allocator `--wrap=malloc/free/calloc/realloc` routing via `wasm_alloc_shim.c`), and test execution.
+- `iso.mk` — Reusable Isomorphic C build module: toolchain flags (`WASI_CC` preferring `clang-18`, `-fvisibility=hidden`, `-Wl,--gc-sections`, `-Wl,--no-entry`), `<ttypt/iso.h>` and `<ttypt/stele_wasm.h>` integration, and automated `check-wasm` ABI verification (`scripts/wasm-audit.sh` enforcing single-allocator purity and export/import allowlists).
 - `glfw.mk` — Optional configuration for immediate-mode GUI and OpenGL libraries (`liblamina` / `libqgl`).
 
 ---
