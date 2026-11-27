@@ -273,6 +273,17 @@ $(wasmtarget): ${WASM_SRCS} ${WASM_ALLOC_SHIM}
 clean-wasm:
 	rm -f ${wasmtarget}
 
-clean: clean-wasm
+static: objects-set.mk ${LIB:%=src/%.o} ${LIB-obj-y}
+	@mkdir -p lib
+	@$(foreach l,${LIB},rm -f lib/${l}.a && ${AR} rcs lib/${l}.a src/${l}.o ${${l}-obj-y} ${${l}-obj-y-${uname}} && ) true
 
-.PHONY: all docs docs-bin compress-man clean clean-extra install uninstall wasm clean-wasm
+install-static: static ${install-dirs} ${installed-headers}
+	@$(foreach l,${LIB},install -m 644 lib/${l}.a ${DESTDIR}${PREFIX}/lib/${l}.a && \
+		(test -z "${SONAME-${l}}" || ln -sf ${l}.a ${DESTDIR}${PREFIX}/lib/${SONAME-${l}}.a) && ) true
+
+clean-static:
+	@rm -f ${LIB:%=lib/%.a} ${LIB:%=lib/${SONAME-%}.a} 2>/dev/null || true
+
+clean: clean-wasm clean-static
+
+.PHONY: all static install-static clean-static docs docs-bin compress-man clean clean-extra install uninstall wasm clean-wasm

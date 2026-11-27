@@ -4,10 +4,10 @@ bname := $(shell basename ${pwd})
 bname != basename ${pwd}
 uname := $(shell test "${cross}" = "" && uname || echo ${cross})
 uname != test "${cross}" = "" && uname || echo ${cross}
-arch := $(shell uname -m)
-arch != uname -m
-distro := $(shell sed -n 's/^ID=//p' /etc/os-release 2>/dev/null | tr -d '"')
-distro != sed -n 's/^ID=//p' /etc/os-release 2>/dev/null | tr -d '"' || true
+arch := $(shell test "${CROSS_ARCH}" = "" && uname -m || echo ${CROSS_ARCH})
+arch != test "${CROSS_ARCH}" = "" && uname -m || echo ${CROSS_ARCH}
+distro := $(shell test "${cross}" = "" && sed -n 's/^ID=//p' /etc/os-release 2>/dev/null | tr -d '"' || true)
+distro != test "${cross}" = "" && sed -n 's/^ID=//p' /etc/os-release 2>/dev/null | tr -d '"' || true
 
 prefix-Darwin-arm64  := /opt/homebrew
 prefix-Darwin-x86_64 := /usr/local
@@ -20,6 +20,8 @@ prefix-DragonFly := /usr/local
 prefix-Msys := /mingw64
 prefix-MingW := /ucrt64
 prefix-MinGW64 := /mingw64
+prefix-Android :=
+prefix-iOS :=
 prefix-${uname} ?= /usr/local
 
 PREFIX ?= ${prefix-${uname}}
@@ -38,6 +40,8 @@ SYS-FreeBSD := Unix
 SYS-NetBSD := Unix
 SYS-DragonFly := Unix
 SYS-Darwin := Unix
+SYS-Android := Unix
+SYS-iOS := Unix
 SYS-${uname} ?= Unix
 SYS := ${SYS-${uname}}
 
@@ -47,6 +51,8 @@ cc-OpenBSD := ${CC}
 cc-FreeBSD := ${CC}
 cc-NetBSD := ${CC}
 cc-DragonFly := ${CC}
+cc-Android := ${CC}
+cc-iOS := ${CC}
 cc-Msys := /usr/bin/x86_64-w64-mingw32-gcc
 cc-MingW := /ucrt64/bin/gcc
 cc-MinGW64 := /mingw64/bin/gcc
@@ -59,11 +65,15 @@ cxx-OpenBSD := ${CXX}
 cxx-FreeBSD := ${CXX}
 cxx-NetBSD := ${CXX}
 cxx-DragonFly := ${CXX}
+cxx-Android := ${CXX}
+cxx-iOS := ${CXX}
 cxx-Msys := /usr/bin/x86_64-w64-mingw32-g++
 cxx-MingW := /ucrt64/bin/g++
 cxx-MinGW64 := /mingw64/bin/g++
 cxx-${uname} ?= ${CXX}
 cxx := ${cxx-${uname}}
+
+AR ?= ar
 
 SO-Windows := dll
 SO-Unix := so
